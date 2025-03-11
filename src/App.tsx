@@ -29,7 +29,7 @@ import { App as AntdApp, ConfigProvider } from "antd";
 
 import "@refinedev/antd/dist/reset.css";
 
-import { PostList, PostEdit, PostShow } from "../src/pages/posts";
+import { PostList, PostEdit, PostShow } from "./pages/overview";
 import { DashboardPage } from "../src/pages/dashboard";
 
 const API_URL = "https://api.fake-rest.refine.dev";
@@ -183,6 +183,12 @@ const App: React.FC = () => {
                 list: "/posts",
                 show: "/posts/show/:id",
                 edit: "/posts/edit/:id",
+              },
+              {
+                name: "lab-test",
+                list: "/lab-test",
+                show: "/lab-test/show/:id",
+                edit: "/lab-test/edit/:id",
               },
             ]}
             notificationProvider={useNotificationProvider}

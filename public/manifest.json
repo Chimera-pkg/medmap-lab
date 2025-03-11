@@ -1,6 +1,6 @@
 {
-  "short_name": "refine authentication example",
-  "name": "refine authentication example",
+  "short_name": "medmap-lab",
+  "name": "medmap-lab",
   "icons": [
     {
       "src": "favicon.ico",
