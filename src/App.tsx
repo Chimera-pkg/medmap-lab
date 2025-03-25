@@ -15,6 +15,15 @@ import {
   GoogleOutlined,
   GithubOutlined,
   DashboardOutlined,
+  UserOutlined,
+  ScheduleFilled,
+  FileAddFilled,
+  MessageFilled,
+  DiffOutlined,
+  TableOutlined,
+  ScheduleOutlined,
+  FileAddOutlined,
+  MessageOutlined,
 } from "@ant-design/icons";
 
 import dataProvider from "@refinedev/simple-rest";
@@ -29,7 +38,7 @@ import { App as AntdApp, ConfigProvider } from "antd";
 
 import "@refinedev/antd/dist/reset.css";
 
-import { PostList, PostEdit, PostShow } from "./pages/overview";
+import { PostList, PostEdit, PostShow } from "./pages/cases";
 import { DashboardPage } from "../src/pages/dashboard";
 
 const API_URL = "https://api.fake-rest.refine.dev";
@@ -171,11 +180,11 @@ const App: React.FC = () => {
             routerProvider={routerProvider}
             resources={[
               {
-                name: "dashboard",
+                name: "Overview",
                 list: "/",
                 meta: {
-                  label: "Dashboard",
-                  icon: <DashboardOutlined />,
+                  label: "Overview",
+                  icon: <TableOutlined />,
                 },
               },
               {
@@ -183,13 +192,42 @@ const App: React.FC = () => {
                 list: "/posts",
                 show: "/posts/show/:id",
                 edit: "/posts/edit/:id",
+                icon: <DiffOutlined />,
+
               },
               {
-                name: "lab-test",
-                list: "/lab-test",
-                show: "/lab-test/show/:id",
-                edit: "/lab-test/edit/:id",
+                name: "patient",
+                list: "/posts",
+                show: "/posts/show/:id",
+                edit: "/posts/edit/:id",
+                icon: <UserOutlined />,
+
               },
+              {
+                name: "schedule",
+                list: "/posts",
+                show: "/posts/show/:id",
+                edit: "/posts/edit/:id",
+                icon: <ScheduleOutlined />,
+
+              },
+              {
+                name: "reports",
+                list: "/posts",
+                show: "/posts/show/:id",
+                edit: "/posts/edit/:id",
+                icon: <FileAddOutlined />,
+
+              },
+              {
+                name: "messages",
+                list: "/posts",
+                show: "/posts/show/:id",
+                edit: "/posts/edit/:id",
+                icon: <MessageOutlined />,
+
+              },
+              
             ]}
             notificationProvider={useNotificationProvider}
             options={{

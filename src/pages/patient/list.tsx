@@ -29,14 +29,10 @@ export const PostList = () => {
     <List>
       <Table {...tableProps} rowKey="id">
         <Table.Column dataIndex="id" title="ID" />
-        <Table.Column dataIndex="title" title="Patient name" />
-        <Table.Column dataIndex="title" title="Test case ID" />
-        <Table.Column dataIndex="title" title="Physician name" />
-        <Table.Column dataIndex="title" title="Disease" />
-        <Table.Column dataIndex="title" title="Specimmen Type" />
+        <Table.Column dataIndex="title" title="Title" />
         <Table.Column
           dataIndex={["category", "id"]}
-          title="Reports Download"
+          title="Category"
           render={(value) => {
             if (isLoading) {
               return <TextField value="Loading..." />;
@@ -49,10 +45,8 @@ export const PostList = () => {
             );
           }}
         />
-        <Table.Column dataIndex="title" title="Reports Download" />
-
         <Table.Column<IPost>
-          title="Quick Actions"
+          title="Actions"
           dataIndex="actions"
           render={(_, record) => (
             <Space>
