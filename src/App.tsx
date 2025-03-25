@@ -38,7 +38,7 @@ import { App as AntdApp, ConfigProvider } from "antd";
 
 import "@refinedev/antd/dist/reset.css";
 
-import { PostList, PostEdit, PostShow } from "./pages/cases";
+import { PostList, PostEdit, PostShow } from "./pages/labTest";
 import { DashboardPage } from "../src/pages/dashboard";
 
 const API_URL = "https://api.fake-rest.refine.dev";
@@ -187,45 +187,51 @@ const App: React.FC = () => {
                   icon: <TableOutlined />,
                 },
               },
+              // {
+              //   name: "cases",
+              //   list: "/posts",
+              //   show: "/posts/show/:id",
+              //   edit: "/posts/edit/:id",
+              //   icon: <DiffOutlined />,
+
+              // },
+              // {
+              //   name: "patient",
+              //   list: "/posts",
+              //   show: "/posts/show/:id",
+              //   edit: "/posts/edit/:id",
+              //   icon: <UserOutlined />,
+
+              // },
+              // {
+              //   name: "schedule",
+              //   list: "/posts",
+              //   show: "/posts/show/:id",
+              //   edit: "/posts/edit/:id",
+              //   icon: <ScheduleOutlined />,
+
+              // },
+              // {
+              //   name: "reports",
+              //   list: "/posts",
+              //   show: "/posts/show/:id",
+              //   edit: "/posts/edit/:id",
+              //   icon: <FileAddOutlined />,
+
+              // },
+              // {
+              //   name: "messages",
+              //   list: "/posts",
+              //   show: "/posts/show/:id",
+              //   edit: "/posts/edit/:id",
+              //   icon: <MessageOutlined />,
+              // },
               {
                 name: "posts",
                 list: "/posts",
                 show: "/posts/show/:id",
                 edit: "/posts/edit/:id",
-                icon: <DiffOutlined />,
-
-              },
-              {
-                name: "patient",
-                list: "/posts",
-                show: "/posts/show/:id",
-                edit: "/posts/edit/:id",
-                icon: <UserOutlined />,
-
-              },
-              {
-                name: "schedule",
-                list: "/posts",
-                show: "/posts/show/:id",
-                edit: "/posts/edit/:id",
-                icon: <ScheduleOutlined />,
-
-              },
-              {
-                name: "reports",
-                list: "/posts",
-                show: "/posts/show/:id",
-                edit: "/posts/edit/:id",
                 icon: <FileAddOutlined />,
-
-              },
-              {
-                name: "messages",
-                list: "/posts",
-                show: "/posts/show/:id",
-                edit: "/posts/edit/:id",
-                icon: <MessageOutlined />,
-
               },
               
             ]}
