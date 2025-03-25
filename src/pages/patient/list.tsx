@@ -8,9 +8,10 @@ import {
   ShowButton,
 } from "@refinedev/antd";
 
-import { Table, Space } from "antd";
+import { Table, Space, Checkbox } from "antd";
 
 import type { IPost, ICategory } from "../../interfaces";
+import { SettingOutlined } from "@ant-design/icons";
 
 export const PostList = () => {
   const { tableProps } = useTable<IPost>();
@@ -28,33 +29,31 @@ export const PostList = () => {
   return (
     <List>
       <Table {...tableProps} rowKey="id">
-        <Table.Column dataIndex="id" title="ID" />
-        <Table.Column dataIndex="title" title="Title" />
+      <Table.Column
+    dataIndex="id"
+    title="Select"
+    render={(value) => <Checkbox>{value}</Checkbox>}
+  />
         <Table.Column
-          dataIndex={["category", "id"]}
-          title="Category"
-          render={(value) => {
-            if (isLoading) {
-              return <TextField value="Loading..." />;
-            }
-
-            return (
-              <TextField
-                value={data?.data.find((item) => item.id === value)?.title}
-              />
-            );
-          }}
-        />
-        <Table.Column<IPost>
-          title="Actions"
-          dataIndex="actions"
-          render={(_, record) => (
-            <Space>
-              <EditButton hideText size="small" recordItemId={record.id} />
-              <ShowButton hideText size="small" recordItemId={record.id} />
-            </Space>
-          )}
-        />
+  title="Risk"
+  render={(_, record) => (
+    <Space>
+      <SettingOutlined
+        style={{ cursor: "pointer" }}
+        onClick={() => {
+          console.log("Settings clicked for record:", record);
+        }}
+      />
+    </Space>
+  )}
+/>
+        <Table.Column dataIndex="title" title="Drug Name" />
+        <Table.Column dataIndex="title" title="Doseage" />
+        <Table.Column dataIndex="title" title="Genetic Interaction" />
+        <Table.Column dataIndex="title" title="Evidence" />
+        <Table.Column dataIndex="title" title="Interactions" />
+        <Table.Column dataIndex="title" title="Quick Actions" />
+        
       </Table>
     </List>
   );
