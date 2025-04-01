@@ -1,41 +1,32 @@
-import { useShow, useOne } from "@refinedev/core";
-
-import { Show, MarkdownField } from "@refinedev/antd";
-
+import { Show } from "@refinedev/antd";
+import { useShow } from "@refinedev/core";
 import { Typography } from "antd";
-
-import type { IPost, ICategory } from "../../interfaces";
 
 const { Title, Text } = Typography;
 
 export const PostShow = () => {
-  const { query: queryResult } = useShow<IPost>();
-  const { data, isLoading } = queryResult;
-  const record = data?.data;
-
-  const { data: categoryData, isLoading: categoryIsLoading } =
-    useOne<ICategory>({
-      resource: "categories",
-      id: record?.category.id || "",
-      queryOptions: {
-        enabled: !!record,
-      },
-    });
+  const { queryResult } = useShow();
+  const record = queryResult?.data?.data;
 
   return (
-    <Show isLoading={isLoading}>
-      <Title level={5}>Id</Title>
-      <Text>{record?.id}</Text>
-      
+    <Show>
+      <Title level={5}>Patient Name</Title>
+      <Text>{record?.patientName}</Text>
 
-      <Title level={5}>Title</Title>
-      <Text>{record?.title}</Text>
+      <Title level={5}>Test Case ID</Title>
+      <Text>{record?.testCaseId}</Text>
 
-      <Title level={5}>Category</Title>
-      <Text>{categoryIsLoading ? "Loading..." : categoryData?.data.title}</Text>
+      <Title level={5}>Physician Name</Title>
+      <Text>{record?.physicianName}</Text>
 
-      <Title level={5}>Content</Title>
-      <MarkdownField value={record?.content} />
+      <Title level={5}>Disease</Title>
+      <Text>{record?.disease}</Text>
+
+      <Title level={5}>Specimen Type</Title>
+      <Text>{record?.specimenType}</Text>
+
+      <Title level={5}>Report Status</Title>
+      <Text>{record?.reportStatus}</Text>
     </Show>
   );
 };

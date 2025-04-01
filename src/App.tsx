@@ -41,7 +41,8 @@ import "@refinedev/antd/dist/reset.css";
 import { PostList, PostEdit, PostShow } from "./pages/labTest";
 import { DashboardPage } from "../src/pages/dashboard";
 
-const API_URL = "https://api.fake-rest.refine.dev";
+const API_URL = "http://localhost:3333/v1";
+
 
 /**
  *  mock auth credentials to simulate authentication
@@ -53,120 +54,89 @@ const authCredentials = {
 
 const App: React.FC = () => {
   const authProvider: AuthProvider = {
-    login: async ({ providerName, email }) => {
-      if (providerName === "google") {
-        window.location.href = "https://accounts.google.com/o/oauth2/v2/auth";
-        return {
-          success: true,
-        };
-      }
-
-      if (providerName === "github") {
-        window.location.href = "https://github.com/login/oauth/authorize";
-        return {
-          success: true,
-        };
-      }
-
-      if (email === authCredentials.email) {
-        localStorage.setItem("email", email);
-        return {
-          success: true,
-          redirectTo: "/",
-        };
-      }
-
-      return {
-        success: false,
-        error: {
-          message: "Login failed",
-          name: "Invalid email or password",
-        },
-      };
-    },
-    register: async (params) => {
-      if (params.email === authCredentials.email && params.password) {
-        localStorage.setItem("email", params.email);
+    login: async ({ email, password }) => {
+      try {
+        // Make a POST request to the login endpoint
+        const response = await fetch(`${API_URL}/auth/login`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password }),
+        });
+  
+        if (!response.ok) {
+          throw new Error("Login failed");
+        }
+  
+        const { token } = await response.json();
+  
+        // Store the token in localStorage
+        localStorage.setItem("authToken", token);
+  
         return {
           success: true,
           redirectTo: "/",
         };
-      }
-      return {
-        success: false,
-        error: {
-          message: "Register failed",
-          name: "Invalid email or password",
-        },
-      };
-    },
-    updatePassword: async (params) => {
-      if (params.password === authCredentials.password) {
-        //we can update password here
+      } catch (error) {
         return {
-          success: true,
+          success: false,
+          error: {
+            message: "Login failed",
+            name: "Invalid email or password",
+          },
         };
       }
-      return {
-        success: false,
-        error: {
-          message: "Update password failed",
-          name: "Invalid password",
-        },
-      };
-    },
-    forgotPassword: async (params) => {
-      if (params.email === authCredentials.email) {
-        //we can send email with reset password link here
-        return {
-          success: true,
-        };
-      }
-      return {
-        success: false,
-        error: {
-          message: "Forgot password failed",
-          name: "Invalid email",
-        },
-      };
     },
     logout: async () => {
-      localStorage.removeItem("email");
+      // Remove the token from localStorage
+      localStorage.removeItem("authToken");
       return {
         success: true,
-        redirectTo: "/login",
+        redirectTo: "/auth/login",
       };
     },
-    onError: async (error) => {
-      if (error.response?.status === 401) {
+    check: async () => {
+      const token = localStorage.getItem("authToken");
+      if (token) {
         return {
-          logout: true,
+          authenticated: true,
         };
       }
-
-      return { error };
+      return {
+        authenticated: false,
+        error: {
+          message: "Check failed",
+          name: "Not authenticated",
+        },
+        logout: true,
+        redirectTo: "/auth/login",
+      };
     },
-    check: async () =>
-      localStorage.getItem("email")
-        ? {
-            authenticated: true,
-          }
-        : {
-            authenticated: false,
-            error: {
-              message: "Check failed",
-              name: "Not authenticated",
-            },
-            logout: true,
-            redirectTo: "/login",
-          },
-    getPermissions: async (params) => params?.permissions,
-    getIdentity: async () => ({
-      id: 1,
-      name: "Jane Doe",
-      avatar:
-        "https://unsplash.com/photos/IWLOvomUmWU/download?force=true&w=640",
-    }),
+    getIdentity: async () => {
+      const token = localStorage.getItem("authToken");
+      if (token) {
+        // Optionally, decode the token or fetch user details
+        return {
+          id: 1,
+          name: "Jane Doe",
+          avatar:
+            "https://unsplash.com/photos/IWLOvomUmWU/download?force=true&w=640",
+        };
+      }
+      return null;
+    },
+    getPermissions: async () => null,
+    onError: async (error) => {
+      console.error("AuthProvider Error:", error);
+      return Promise.resolve({
+        success: false,
+        error: {
+          message: "An error occurred",
+          name: "AuthProviderError",
+        },
+      });
+    },
   };
 
   return (
@@ -227,10 +197,11 @@ const App: React.FC = () => {
               //   icon: <MessageOutlined />,
               // },
               {
-                name: "posts",
-                list: "/posts",
-                show: "/posts/show/:id",
-                edit: "/posts/edit/:id",
+                name: "lab-tests",
+                list: "/lab-tests",
+                show: "/lab-tests/show/:id",
+                edit: "/lab-tests/edit/:id",
+                create: "/lab-tests/create",
                 icon: <FileAddOutlined />,
               },
               
@@ -256,7 +227,7 @@ const App: React.FC = () => {
               >
                 <Route index element={<DashboardPage />} />
 
-                <Route path="/posts">
+                <Route path="/lab-tests">
                   <Route index element={<PostList />} />
                   <Route path="edit/:id" element={<PostEdit />} />
                   <Route path="show/:id" element={<PostShow />} />
