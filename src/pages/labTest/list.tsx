@@ -1,31 +1,25 @@
-import { useMany } from "@refinedev/core";
-
-import {
-  List,
-  TextField,
-  useTable,
-  EditButton,
-  ShowButton,
-} from "@refinedev/antd";
-
-import { Table, Space, Checkbox } from "antd";
-
-import type { IPost, ICategory } from "../../interfaces";
+import { List, useTable, EditButton } from "@refinedev/antd";
+import { Table, Space, Checkbox, Button } from "antd";
 import { SettingOutlined } from "@ant-design/icons";
-import { Button } from "antd/lib";
 import moment from "moment";
 
-export const PostList = () => {
-  const { tableProps } = useTable<IPost>();
+// Define interface to match the API response structure
+interface ILabTest {
+  id: number;
+  patient_name: string;
+  test_case_id: string;
+  physician_name: string;
+  disease: string;
+  specimen_type: string;
+  report_status: string;
+  created_at: string;
+  updated_at: string;
+}
 
-  const categoryIds =
-    tableProps?.dataSource?.map((item) => item.category.id) ?? [];
-  const { data, isLoading } = useMany<ICategory>({
-    resource: "categories",
-    ids: categoryIds,
-    queryOptions: {
-      enabled: categoryIds.length > 0,
-    },
+export const PostList = () => {
+  // Use ILabTest interface instead of IPost
+  const { tableProps } = useTable<ILabTest>({
+    resource: "lab-tests",
   });
 
   return (
@@ -34,7 +28,7 @@ export const PostList = () => {
         <Table.Column
           dataIndex="id"
           title="Select"
-          render={(value) => <Checkbox>{value}</Checkbox>}
+          render={(value) => <Checkbox />}
         />
         <Table.Column
           title="Actions"
@@ -49,11 +43,11 @@ export const PostList = () => {
             </Space>
           )}
         />
-        <Table.Column dataIndex="title" title="PATIENT NAME" />
-        <Table.Column dataIndex="title" title="TEST CASE ID" />
-        <Table.Column dataIndex="title" title="PHYSICIAN NAME" />
-        <Table.Column dataIndex="title" title="DISEASE" />
-        <Table.Column dataIndex="title" title="SPECIMEN TYPE" />
+        <Table.Column dataIndex="patient_name" title="PATIENT NAME" />
+        <Table.Column dataIndex="test_case_id" title="TEST CASE ID" />
+        <Table.Column dataIndex="physician_name" title="PHYSICIAN NAME" />
+        <Table.Column dataIndex="disease" title="DISEASE" />
+        <Table.Column dataIndex="specimen_type" title="SPECIMEN TYPE" />
         <Table.Column
           title="REPORT DOWNLOAD"
           render={() => (
@@ -68,7 +62,7 @@ export const PostList = () => {
           )}
         />
         <Table.Column
-          dataIndex="dateCreated"
+          dataIndex="created_at"
           title="DATE CREATED"
           render={(value) => moment(value).format("DD-MMM-YYYY hh:mm A")}
         />
