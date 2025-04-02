@@ -30,19 +30,7 @@ export const PostList = () => {
           title="Select"
           render={(value) => <Checkbox />}
         />
-        <Table.Column
-          title="Actions"
-          render={(_, record) => (
-            <Space>
-              <SettingOutlined
-                style={{ cursor: "pointer" }}
-                onClick={() => {
-                  console.log("Settings clicked for record:", record);
-                }}
-              />
-            </Space>
-          )}
-        />
+        
         <Table.Column dataIndex="patient_name" title="PATIENT NAME" />
         <Table.Column dataIndex="test_case_id" title="TEST CASE ID" />
         <Table.Column dataIndex="physician_name" title="PHYSICIAN NAME" />

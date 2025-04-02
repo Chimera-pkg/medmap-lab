@@ -38,7 +38,7 @@ import { App as AntdApp, ConfigProvider } from "antd";
 
 import "@refinedev/antd/dist/reset.css";
 
-import { PostList, PostEdit, PostShow } from "./pages/labTest";
+import { PostList, PostEdit, PostShow, PostCreate } from "./pages/labTest";
 import { DashboardPage } from "../src/pages/dashboard";
 
 const API_URL = "http://localhost:3333/v1";
@@ -231,6 +231,7 @@ const App: React.FC = () => {
                   <Route index element={<PostList />} />
                   <Route path="edit/:id" element={<PostEdit />} />
                   <Route path="show/:id" element={<PostShow />} />
+                  <Route path="create" element={<PostCreate />} />
                 </Route>
               </Route>
 
