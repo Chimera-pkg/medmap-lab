@@ -9,3 +9,12 @@ export interface IPost {
   status: "published" | "draft" | "rejected";
   category: { id: number };
 }
+
+export interface ILabTest {
+  patient_name: string;
+  test_case_id: string;
+  physician_name: string;
+  disease: string;
+  specimen_type: string;
+  report_status: string;
+}
