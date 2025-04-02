@@ -10,14 +10,14 @@ export const PostCreate: React.FC = () => {
         <Create saveButtonProps={saveButtonProps}>
             <Form {...formProps} layout="vertical">
                 <Row gutter={16}>
-                    {/* Kolom 1: 5 baris */}
+                    {/* Row 1: 5 fields */}
                     <Col span={8}>
                         <Form.Item
-                            label="Name"
+                            label="Patient Name"
                             name="patient_name"
-                            rules={[{ required: true, message: "Name is required" }]}
+                            rules={[{ required: true, message: "Patient Name is required" }]}
                         >
-                            <Input />
+                            <Input placeholder="Example: John Doe" />
                         </Form.Item>
                         <Form.Item
                             label="Date of Birth"
@@ -31,11 +31,12 @@ export const PostCreate: React.FC = () => {
                             />
                         </Form.Item>
                         <Form.Item
-                            label="Choose Gender"
+                            label="Sex"
                             name="sex"
-                            rules={[{ required: true, message: "Gender is required" }]}
+                            rules={[{ required: true, message: "Sex is required" }]}
                         >
                             <Select
+                                placeholder="Choose gender"
                                 options={[
                                     { label: "Male", value: "Male" },
                                     { label: "Female", value: "Female" },
@@ -54,53 +55,53 @@ export const PostCreate: React.FC = () => {
                             name="ethnicity"
                             rules={[{ required: true, message: "Ethnicity is required" }]}
                         >
-                            <Input placeholder="e.g. Hispanic" />
+                            <Input placeholder="E.G Hispanic" />
                         </Form.Item>
                     </Col>
 
-                    {/* Kolom 2: 5 baris */}
+                    {/* Row 2: 5 fields */}
                     <Col span={8}>
                         <Form.Item
                             label="Specimen Collected From"
                             name="specimen_collected_from"
                             rules={[{ required: true, message: "Specimen Collected From is required" }]}
                         >
-                            <Input />
+                            <Input placeholder="Example: Name of hospital" />
                         </Form.Item>
                         <Form.Item
                             label="Specimen Type"
                             name="specimen_type"
                             rules={[{ required: true, message: "Specimen Type is required" }]}
                         >
-                            <Input />
+                            <Input placeholder="Example: Whole blood" />
                         </Form.Item>
                         <Form.Item
                             label="Specimen ID"
                             name="specimen_id"
                             rules={[{ required: true, message: "Specimen ID is required" }]}
                         >
-                            <Input />
+                            <Input placeholder="E.G 001 002" />
                         </Form.Item>
                         <Form.Item
-                            label="Specimen Received"
-                            name="specimen_received"
-                            rules={[{ required: true, message: "Specimen Received is required" }]}
+                            label="Specimen Date"
+                            name="specimen_date"
+                            rules={[{ required: true, message: "Specimen Date is required" }]}
                         >
                             <DatePicker
                                 style={{ width: "100%" }}
                                 format="DD/MM/YYYY"
-                                placeholder="Pilih tanggal"
+                                placeholder="Choose date"
                             />
                         </Form.Item>
                         <Form.Item
                             label="Reviewed By"
                             name="reviewer_name"
                         >
-                            <Input placeholder="Optional" />
+                            <Input placeholder="Example: Dr. Ong Kiat Hoe" />
                         </Form.Item>
                     </Col>
 
-                    {/* Kolom 3: 3 baris */}
+                    {/* Row 3: 3 fields */}
                     <Col span={8}>
                         <Form.Item
                             label="Test Information"
