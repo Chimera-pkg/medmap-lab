@@ -84,7 +84,7 @@ export const PostCreate: React.FC = () => {
                         </Form.Item>
                         <Form.Item
                             label="Specimen Date"
-                            name="specimen_date"
+                            name="specimen_received"
                             rules={[{ required: true, message: "Specimen Date is required" }]}
                         >
                             <DatePicker
