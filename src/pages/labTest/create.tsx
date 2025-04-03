@@ -20,6 +20,13 @@ export const PostCreate: React.FC = () => {
                             <Input placeholder="Example: John Doe" />
                         </Form.Item>
                         <Form.Item
+                            label="Test Case ID"
+                            name="test_case_id"
+                            rules={[{ required: true, message: "Test Case ID is required" }]}
+                        >
+                            <Input placeholder="Example: John Doe" />
+                        </Form.Item>
+                        <Form.Item
                             label="Date of Birth"
                             name="date_of_birth"
                             rules={[{ required: true, message: "Date of Birth is required" }]}
@@ -44,11 +51,18 @@ export const PostCreate: React.FC = () => {
                             />
                         </Form.Item>
                         <Form.Item
-                            label="MRN"
-                            name="mrn"
-                            rules={[{ required: true, message: "MRN is required" }]}
+                            label="Physician Name"
+                            name="physician_name"
+                            rules={[{ required: true, message: "Physician is required" }]}
                         >
-                            <Input placeholder="MRN" />
+                            <Input placeholder="Example: Dr Ong" />
+                        </Form.Item>
+                        <Form.Item
+                            label="Disease"
+                            name="disease"
+                            rules={[{ required: true, message: "Disease is required" }]}
+                        >
+                            <Input placeholder="E.G Hispanic" />
                         </Form.Item>
                         <Form.Item
                             label="Ethnicity"
@@ -61,6 +75,13 @@ export const PostCreate: React.FC = () => {
 
                     {/* Row 2: 5 fields */}
                     <Col span={8}>
+                        <Form.Item
+                            label="MRN"
+                            name="mrn"
+                            rules={[{ required: true, message: "MRN is required" }]}
+                        >
+                            <Input placeholder="MRN" />
+                        </Form.Item>
                         <Form.Item
                             label="Specimen Collected From"
                             name="specimen_collected_from"
