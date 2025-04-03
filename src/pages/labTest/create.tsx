@@ -30,13 +30,15 @@ export const PostCreate: React.FC = () => {
                             label="Date of Birth"
                             name="date_of_birth"
                             rules={[{ required: true, message: "Date of Birth is required" }]}
-                        >
+                            // Ubah nilai dayjs ke string dengan format "DD/MM/YYYY"
+                            getValueFromEvent={(value) => (value ? value.format("DD/MM/YYYY") : "")}
+                            >
                             <DatePicker
                                 style={{ width: "100%" }}
                                 format="DD/MM/YYYY"
                                 placeholder="Pilih tanggal"
                             />
-                        </Form.Item>
+                            </Form.Item>
                         <Form.Item
                             label="Sex"
                             name="sex"
@@ -53,7 +55,7 @@ export const PostCreate: React.FC = () => {
                         <Form.Item
                             label="Physician Name"
                             name="physician_name"
-                            rules={[{ required: true, message: "Physician is required" }]}
+                            rules={[{ required: true, message: "Patient Name is required" }]}
                         >
                             <Input placeholder="Example: Dr Ong" />
                         </Form.Item>
@@ -107,13 +109,14 @@ export const PostCreate: React.FC = () => {
                             label="Specimen Date"
                             name="specimen_received"
                             rules={[{ required: true, message: "Specimen Date is required" }]}
-                        >
+                            getValueFromEvent={(value) => (value ? value.format("DD/MM/YYYY") : "")}
+                            >
                             <DatePicker
                                 style={{ width: "100%" }}
                                 format="DD/MM/YYYY"
                                 placeholder="Choose date"
                             />
-                        </Form.Item>
+                            </Form.Item>
                         <Form.Item
                             label="Reviewed By"
                             name="reviewer_name"
