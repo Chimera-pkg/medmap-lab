@@ -2,6 +2,7 @@ import { List, useTable, EditButton } from "@refinedev/antd";
 import { Table, Space, Checkbox, Button, Modal, message } from "antd";
 import moment from "moment";
 import { API_URL } from "../../config";
+import { DeleteOutlined } from "@ant-design/icons";
 
 interface ILabTest {
   id: number;
@@ -98,9 +99,12 @@ export const PostList = () => {
           render={(_, record: ILabTest) => (
             <Space>
               <EditButton hideText size="small" recordItemId={record.id} />
-              <Button type="link" danger onClick={() => handleDelete(record)}>
-                Delete
-              </Button>
+              <Button
+                type="link"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => handleDelete(record)}
+            />
             </Space>
           )}
         />

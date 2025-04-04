@@ -2,6 +2,7 @@ import { Create, useForm } from "@refinedev/antd";
 import { Form, Input, Select, DatePicker, Upload, Button, Row, Col } from "antd";
 import MDEditor from "@uiw/react-md-editor";
 import { UploadOutlined } from "@ant-design/icons";
+import dayjs from "dayjs";
 
 export const PostCreate: React.FC = () => {
     const { formProps, saveButtonProps } = useForm();
@@ -29,16 +30,18 @@ export const PostCreate: React.FC = () => {
                         <Form.Item
                             label="Date of Birth"
                             name="date_of_birth"
-                            rules={[{ required: true, message: "Date of Birth is required" }]}
-                            // Ubah nilai dayjs ke string dengan format "DD/MM/YYYY"
-                            getValueFromEvent={(value) => (value ? value.format("DD/MM/YYYY") : "")}
-                            >
+                            rules={[{ required: true, message: "Specimen Date is required" }]}
+                            getValueProps={(value) => ({
+                                value: value ? dayjs(value) : undefined,
+                            })}
+                            normalize={(value) => (value ? dayjs(value).format("YYYY-MM-DD") : null)}
+                        >
                             <DatePicker
                                 style={{ width: "100%" }}
-                                format="DD/MM/YYYY"
-                                placeholder="Pilih tanggal"
+                                format="YYYY-MM-DD"
+                                placeholder="Choose date"
                             />
-                            </Form.Item>
+                        </Form.Item>
                         <Form.Item
                             label="Sex"
                             name="sex"
@@ -109,14 +112,17 @@ export const PostCreate: React.FC = () => {
                             label="Specimen Date"
                             name="specimen_received"
                             rules={[{ required: true, message: "Specimen Date is required" }]}
-                            getValueFromEvent={(value) => (value ? value.format("DD/MM/YYYY") : "")}
-                            >
+                            getValueProps={(value) => ({
+                                value: value ? dayjs(value) : undefined,
+                            })}
+                            normalize={(value) => (value ? dayjs(value).format("YYYY-MM-DD") : null)}
+                        >
                             <DatePicker
                                 style={{ width: "100%" }}
-                                format="DD/MM/YYYY"
+                                format="YYYY-MM-DD"
                                 placeholder="Choose date"
                             />
-                            </Form.Item>
+                        </Form.Item>
                         <Form.Item
                             label="Reviewed By"
                             name="reviewer_name"

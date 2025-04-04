@@ -1,15 +1,29 @@
-import React from "react";
 import { Edit, useForm } from "@refinedev/antd";
 import { Form, Input, Select, DatePicker, Upload, Button, Row, Col } from "antd";
 import MDEditor from "@uiw/react-md-editor";
 import { UploadOutlined } from "@ant-design/icons";
+import dayjs from "dayjs";
 
 export const PostEdit: React.FC = () => {
-  const { formProps, saveButtonProps } = useForm();
+  const { formProps, saveButtonProps } = useForm({
+    action: "edit", // Specify the action as "edit"
+  });
+
+  const handleFinish = async (values: any) => {
+          const { date_of_birth, specimen_received, ...restValues } = values;
+  
+          const formattedValues = {
+              ...restValues,
+              date_of_birth: date_of_birth ? dayjs(date_of_birth).format("YYYY-MM-DD") : null,
+              specimen_received: specimen_received ? dayjs(specimen_received).format("YYYY-MM-DD") : null,
+          };
+  
+          console.log("Formatted Values:", formattedValues);
+      };
 
   return (
     <Edit saveButtonProps={saveButtonProps}>
-      <Form {...formProps} layout="vertical">
+      <Form {...formProps} layout="vertical" onFinish={handleFinish}>
         <Row gutter={16}>
           {/* Row 1: 5 fields */}
           <Col span={8}>
@@ -21,16 +35,26 @@ export const PostEdit: React.FC = () => {
               <Input placeholder="Example: John Doe" />
             </Form.Item>
             <Form.Item
-              label="Date of Birth"
-              name="date_of_birth"
-              rules={[{ required: true, message: "Date of Birth is required" }]}
+              label="Test Case ID"
+              name="test_case_id"
+              rules={[{ required: true, message: "Test Case ID is required" }]}
             >
-              <DatePicker
-                style={{ width: "100%" }}
-                format="DD/MM/YYYY"
-                placeholder="Choose date"
-              />
+              <Input placeholder="Example: TC-001" />
             </Form.Item>
+            <Form.Item
+                            label="Date of Birth"
+                            name="date_of_birth"
+                            rules={[{ required: true, message: "Date of Birth is required" }]}
+                            getValueProps={(value) => ({
+                                value: value ? dayjs(value) : undefined,
+                            })}
+                        >
+                            <DatePicker
+                                style={{ width: "100%" }}
+                                format="YYYY-MM-DD"
+                                placeholder="Choose date"
+                            />
+                        </Form.Item>
             <Form.Item
               label="Sex"
               name="sex"
@@ -45,23 +69,37 @@ export const PostEdit: React.FC = () => {
               />
             </Form.Item>
             <Form.Item
-              label="MRN"
-              name="mrn"
-              rules={[{ required: true, message: "MRN is required" }]}
+              label="Physician Name"
+              name="physician_name"
+              rules={[{ required: true, message: "Physician Name is required" }]}
             >
-              <Input placeholder="MRN" />
+              <Input placeholder="Example: Dr. Ong" />
+            </Form.Item>
+            <Form.Item
+              label="Disease"
+              name="disease"
+              rules={[{ required: true, message: "Disease is required" }]}
+            >
+              <Input placeholder="Example: Diabetes" />
             </Form.Item>
             <Form.Item
               label="Ethnicity"
               name="ethnicity"
               rules={[{ required: true, message: "Ethnicity is required" }]}
             >
-              <Input placeholder="E.G Hispanic" />
+              <Input placeholder="Example: Hispanic" />
             </Form.Item>
           </Col>
 
           {/* Row 2: 5 fields */}
           <Col span={8}>
+            <Form.Item
+              label="MRN"
+              name="mrn"
+              rules={[{ required: true, message: "MRN is required" }]}
+            >
+              <Input placeholder="MRN" />
+            </Form.Item>
             <Form.Item
               label="Specimen Collected From"
               name="specimen_collected_from"
@@ -86,15 +124,18 @@ export const PostEdit: React.FC = () => {
               <Input placeholder="E.G 001 002" />
             </Form.Item>
             <Form.Item
-              label="Specimen Date"
-              name="specimen_received"
-              rules={[{ required: true, message: "Specimen Date is required" }]}
+            label="Specimen Date"
+            name="specimen_received"
+            rules={[{ required: true, message: "Specimen Date is required" }]}
+            getValueProps={(value) => ({
+            value: value ? dayjs(value) : undefined,
+          })}
             >
-              <DatePicker
+            <DatePicker
                 style={{ width: "100%" }}
-                format="DD/MM/YYYY"
+                format="YYYY-MM-DD"
                 placeholder="Choose date"
-              />
+                            />
             </Form.Item>
             <Form.Item
               label="Reviewed By"
@@ -120,7 +161,7 @@ export const PostEdit: React.FC = () => {
             >
               <MDEditor />
             </Form.Item>
-            {/* <Form.Item
+            <Form.Item
               label="Upload CSV File"
               name="upload_csv_file"
               valuePropName="fileList"
@@ -135,7 +176,7 @@ export const PostEdit: React.FC = () => {
               >
                 <Button icon={<UploadOutlined />}>Upload CSV</Button>
               </Upload>
-            </Form.Item> */}
+            </Form.Item>
           </Col>
         </Row>
       </Form>
