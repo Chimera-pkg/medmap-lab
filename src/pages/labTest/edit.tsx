@@ -9,21 +9,9 @@ export const PostEdit: React.FC = () => {
     action: "edit", // Specify the action as "edit"
   });
 
-  const handleFinish = async (values: any) => {
-          const { date_of_birth, specimen_received, ...restValues } = values;
-  
-          const formattedValues = {
-              ...restValues,
-              date_of_birth: date_of_birth ? dayjs(date_of_birth).format("YYYY-MM-DD") : null,
-              specimen_received: specimen_received ? dayjs(specimen_received).format("YYYY-MM-DD") : null,
-          };
-  
-          console.log("Formatted Values:", formattedValues);
-      };
-
   return (
     <Edit saveButtonProps={saveButtonProps}>
-      <Form {...formProps} layout="vertical" onFinish={handleFinish}>
+      <Form {...formProps} layout="vertical">
         <Row gutter={16}>
           {/* Row 1: 5 fields */}
           <Col span={8}>
@@ -42,19 +30,20 @@ export const PostEdit: React.FC = () => {
               <Input placeholder="Example: TC-001" />
             </Form.Item>
             <Form.Item
-                            label="Date of Birth"
-                            name="date_of_birth"
-                            rules={[{ required: true, message: "Date of Birth is required" }]}
-                            getValueProps={(value) => ({
-                                value: value ? dayjs(value) : undefined,
-                            })}
-                        >
-                            <DatePicker
-                                style={{ width: "100%" }}
-                                format="YYYY-MM-DD"
-                                placeholder="Choose date"
-                            />
-                        </Form.Item>
+                                        label="Date of Birth"
+                                        name="date_of_birth"
+                                        rules={[{ required: true, message: "Specimen Date is required" }]}
+                                        getValueProps={(value) => ({
+                                            value: value ? dayjs(value) : undefined,
+                                        })}
+                                        normalize={(value) => (value ? dayjs(value).format("YYYY-MM-DD") : null)}
+                                    >
+                                        <DatePicker
+                                            style={{ width: "100%" }}
+                                            format="YYYY-MM-DD"
+                                            placeholder="Choose date"
+                                        />
+                                    </Form.Item>
             <Form.Item
               label="Sex"
               name="sex"
@@ -124,19 +113,20 @@ export const PostEdit: React.FC = () => {
               <Input placeholder="E.G 001 002" />
             </Form.Item>
             <Form.Item
-            label="Specimen Date"
-            name="specimen_received"
-            rules={[{ required: true, message: "Specimen Date is required" }]}
-            getValueProps={(value) => ({
-            value: value ? dayjs(value) : undefined,
-          })}
-            >
-            <DatePicker
-                style={{ width: "100%" }}
-                format="YYYY-MM-DD"
-                placeholder="Choose date"
-                            />
-            </Form.Item>
+                                        label="Specimen Date"
+                                        name="specimen_received"
+                                        rules={[{ required: true, message: "Specimen Date is required" }]}
+                                        getValueProps={(value) => ({
+                                            value: value ? dayjs(value) : undefined,
+                                        })}
+                                        normalize={(value) => (value ? dayjs(value).format("YYYY-MM-DD") : null)}
+                                    >
+                                        <DatePicker
+                                            style={{ width: "100%" }}
+                                            format="YYYY-MM-DD"
+                                            placeholder="Choose date"
+                                        />
+                                    </Form.Item>
             <Form.Item
               label="Reviewed By"
               name="reviewer_name"
