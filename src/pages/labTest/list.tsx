@@ -70,22 +70,30 @@ export const PostList = () => {
         <Table.Column dataIndex="specimen_type" title="SPECIMEN TYPE" />
         <Table.Column
           title="REPORT DOWNLOAD"
-          render={() => (
+          render={(_, record: ILabTest) => (
             <Space>
-              <a
-                href="/path/to/report.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                PDF
-              </a>
-              <a
-                href="/path/to/report.hl7"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                HL7
-              </a>
+              {record.report_download_pdf ? (
+                <a
+                  href={`${API_URL}/files/${record.report_download_pdf}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                 PDF
+                </a>
+              ) : (
+                <span>No PDF</span>
+              )}
+              {record.report_download_hl7 ? (
+                <a
+                  href={`${API_URL}/files/${record.report_download_hl7}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  HL7
+                </a>
+              ) : (
+                <span>No HL7</span>
+              )}
             </Space>
           )}
         />
