@@ -40,6 +40,8 @@ import "@refinedev/antd/dist/reset.css";
 
 import { PostList, PostEdit, PostShow, PostCreate } from "./pages/labTest";
 import { DashboardPage } from "../src/pages/dashboard";
+import PdfViewer from "./pages/viewers/pdf-viewer";
+import Hl7Viewer from "./pages/viewers/hl7-viewer";
 
 const API_URL = "http://localhost:3333/v1";
 
@@ -226,12 +228,15 @@ const App: React.FC = () => {
                 }
               >
                 <Route index element={<DashboardPage />} />
+                <Route path="/pdf-viewer" element={<PdfViewer />} />
+                <Route path="/hl7-viewer" element={<Hl7Viewer />} />
 
                 <Route path="/lab-tests">
                   <Route index element={<PostList />} />
                   <Route path="edit/:id" element={<PostEdit />} />
                   <Route path="show/:id" element={<PostShow />} />
                   <Route path="create" element={<PostCreate />} />
+                  
                 </Route>
               </Route>
 

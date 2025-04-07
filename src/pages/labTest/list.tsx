@@ -1,8 +1,8 @@
-import { List, useTable, EditButton } from "@refinedev/antd";
+import { List, useTable, EditButton, ShowButton } from "@refinedev/antd";
 import { Table, Space, Checkbox, Button, Modal, message } from "antd";
 import moment from "moment";
 import { API_URL } from "../../config";
-import { DeleteOutlined } from "@ant-design/icons";
+import { DeleteOutlined, FilePdfOutlined, FileTextOutlined, EyeOutlined } from "@ant-design/icons";
 
 interface ILabTest {
   id: number;
@@ -12,6 +12,8 @@ interface ILabTest {
   disease: string;
   specimen_type: string;
   report_status: string;
+  report_download_pdf: string;
+  report_download_hl7: string;
   created_at: string;
   updated_at: string;
 }
@@ -30,10 +32,12 @@ export const PostList = () => {
       cancelText: "Cancel",
       onOk: async () => {
         try {
+          const token = localStorage.getItem("authToken");
           const response = await fetch(`${API_URL}/lab-tests/${record.id}`, {
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`
             },
             body: JSON.stringify({
               deleted_at: new Date().toISOString(),
@@ -55,6 +59,45 @@ export const PostList = () => {
     });
   };
 
+  const handleFileDownload = (fileUrl: string, fileName: string) => {
+    // Get authentication token from localStorage
+    const token = localStorage.getItem("authToken");
+    
+    fetch(`${fileUrl}`, {
+      headers: {
+        Authorization: `Bearer ${token}` // Add authentication header
+      }
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error("Failed to download file");
+      }
+      return response.blob();
+    })
+    .then(blob => {
+      // Create a URL for the blob
+      const url = window.URL.createObjectURL(blob);
+      // Create a temporary anchor element and trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    })
+    .catch(error => {
+      console.error("Error downloading file:", error);
+      message.error("Failed to download file");
+    });
+  };
+  
+  const openFileViewer = (fileUrl: string, fileType: string) => {
+    const token = localStorage.getItem("authToken");
+    const viewerUrl = `/file-viewer?url=${encodeURIComponent(fileUrl)}&type=${fileType}&token=${token}`;
+    window.open(viewerUrl, '_blank');
+  };
+
   return (
     <List>
       <Table {...tableProps} rowKey="id">
@@ -73,24 +116,52 @@ export const PostList = () => {
           render={(_, record: ILabTest) => (
             <Space>
               {record.report_download_pdf ? (
-                <a
-                  href={`${API_URL}/files/${record.report_download_pdf}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                 PDF
-                </a>
+                <Space>
+                  <Button
+                    type="link"
+                    icon={<FilePdfOutlined />}
+                    onClick={() => handleFileDownload(record.report_download_pdf, `${record.test_case_id}_report.pdf`)}
+                  >
+                    PDF
+                  </Button>
+                  <Button
+                    type="link"
+                    icon={<EyeOutlined />}
+                    onClick={() => {
+                      const token = localStorage.getItem("authToken");
+                      const fileUrl = `${record.report_download_pdf}`;
+                      const viewerUrl = `/pdf-viewer?url=${encodeURIComponent(fileUrl)}&token=${token}`;
+                      window.open(viewerUrl, '_blank');
+                    }}
+                  >
+                    View
+                  </Button>
+                </Space>
               ) : (
                 <span>No PDF</span>
               )}
               {record.report_download_hl7 ? (
-                <a
-                  href={`${API_URL}/files/${record.report_download_hl7}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  HL7
-                </a>
+                <Space>
+                  <Button
+                    type="link"
+                    icon={<FileTextOutlined />}
+                    onClick={() => handleFileDownload(record.report_download_hl7, `${record.test_case_id}_report.hl7`)}
+                  >
+                    HL7
+                  </Button>
+                  <Button
+                    type="link"
+                    icon={<EyeOutlined />}
+                    onClick={() => {
+                      const token = localStorage.getItem("authToken");
+                      const fileUrl = `${API_URL}/${record.report_download_hl7}`;
+                      const viewerUrl = `/hl7-viewer?url=${encodeURIComponent(fileUrl)}&token=${token}`;
+                      window.open(viewerUrl, '_blank');
+                    }}
+                  >
+                    View
+                  </Button>
+                </Space>
               ) : (
                 <span>No HL7</span>
               )}
@@ -107,12 +178,13 @@ export const PostList = () => {
           render={(_, record: ILabTest) => (
             <Space>
               <EditButton hideText size="small" recordItemId={record.id} />
+              <ShowButton hideText size="small" recordItemId={record.id} />
               <Button
                 type="link"
                 danger
                 icon={<DeleteOutlined />}
                 onClick={() => handleDelete(record)}
-            />
+              />
             </Space>
           )}
         />
