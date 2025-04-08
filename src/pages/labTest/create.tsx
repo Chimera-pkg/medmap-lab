@@ -1,107 +1,138 @@
 import { Create, useForm } from "@refinedev/antd";
-import { Form, Input, Select, DatePicker, Upload, Button, Row, Col } from "antd";
+import { Form, Input, Select, DatePicker, Upload, Button, Row, Col, notification } from "antd";
 import MDEditor from "@uiw/react-md-editor";
 import { UploadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { generateReportBlob } from "../../utils/generateReport";
 import { API_URL } from "../../config";
+import { useNavigate } from "react-router-dom";
 
 export const PostCreate: React.FC = () => {
-    const { formProps, saveButtonProps } = useForm({
-        onFinish: async (values) => {
-            const { date_of_birth, specimen_received, ...restValues } = values;
-        
-            // Format data for the report
-            const reportData = {
-                patient: {
-                    "Patient Name": values.patient_name,
-                    "Date of Birth": date_of_birth ? dayjs(date_of_birth).format("YYYY-MM-DD") : null,
-                    Sex: values.sex,
-                    MRN: values.mrn,
-                    Ethnicity: values.ethnicity || "N/A",
+    // Misalnya untuk redirect setelah sukses
+    const navigate = useNavigate();
+
+    const { formProps, saveButtonProps } = useForm();
+
+    // Fungsi ketika form submit (akan dijalankan secara penuh, tidak hanya save record)
+    const handleFinish = async (values: any) => {
+        const { date_of_birth, specimen_received } = values;
+
+        // Format data untuk report
+        const reportData = {
+            patient: {
+                "Patient Name": values.patient_name,
+                "Date of Birth": date_of_birth ? dayjs(date_of_birth).format("YYYY-MM-DD") : null,
+                Sex: values.sex,
+                MRN: values.mrn,
+                Ethnicity: values.ethnicity || "N/A",
+            },
+            specimen: {
+                "Specimen Type": values.specimen_type,
+                "Specimen ID": values.specimen_id,
+                "Collected": values.specimen_collected_from || "N/A",
+                "Received": specimen_received ? dayjs(specimen_received).format("YYYY-MM-DD") : null,
+            },
+            orderedBy: {
+                Requester: "TTSH",
+                Physician: values.physician_name,
+            },
+            caseInfo: {
+                "Test Case ID": values.test_case_id,
+                "Review Status": "Final",
+                "Date Accessioned": dayjs().format("YYYY-MM-DD"),
+                "Date Reported": dayjs().format("YYYY-MM-DD"),
+            },
+            testResults: [
+                {
+                    drug: "Warfarin",
+                    gene: "CYP2C9",
+                    genotype: "*1/*1",
+                    phenotype: "Normal Metabolizer",
+                    toxicity: "–",
+                    dosage: "–",
+                    efficacy: "–",
                 },
-                specimen: {
-                    "Specimen Type": values.specimen_type,
-                    "Specimen ID": values.specimen_id,
-                    "Collected": values.specimen_collected_from || "N/A",
-                    "Received": specimen_received ? dayjs(specimen_received).format("YYYY-MM-DD") : null,
-                },
-                orderedBy: {
-                    Requester: "TTSH",
-                    Physician: values.physician_name,
-                },
-                caseInfo: {
-                    "Test Case ID": values.test_case_id,
-                    "Review Status": "Final",
-                    "Date Accessioned": dayjs().format("YYYY-MM-DD"),
-                    "Date Reported": dayjs().format("YYYY-MM-DD"),
-                },
-                testResults: [
-                    {
-                        drug: "Warfarin",
-                        gene: "CYP2C9",
-                        genotype: "*1/*1",
-                        phenotype: "Normal Metabolizer",
-                        toxicity: "–",
-                        dosage: "–",
-                        efficacy: "–",
-                    },
-                ],
-                footerText: "The lab-developed pharmacogenomic assay tests for ABCG2, CYP2C19, CYP2C9, CYP2D6, CYP3A5, CYP4F2, DPYD, HLA-A, HLA-B, NUDT15, SLCO1B1, TPMT, UGT1A1, and VKORC1 gene variants by Taqman SNP Genotyping Assays on Quantstudio 6 Flex Real-time PCR system from Thermo Fisher Scientific.",
-            };
-        
-            // Generate PDF blob (without downloading)
+            ],
+            footerText:
+                "The lab-developed pharmacogenomic assay tests for ABCG2, CYP2C19, CYP2C9, CYP2D6, CYP3A5, CYP4F2, DPYD, HLA-A, HLA-B, NUDT15, SLCO1B1, TPMT, UGT1A1, and VKORC1 gene variants by Taqman SNP Genotyping Assays on Quantstudio 6 Flex Real-time PCR system from Thermo Fisher Scientific.",
+        };
+
+        try {
+            // Generate PDF blob berdasarkan reportData
             const pdfBlob = await generateReportBlob(reportData);
-        
-            // Generate HL7 data
+            console.log("Generated PDF Blob:", pdfBlob);
+
+            // Format data HL7 (dapat disesuaikan sesuai kebutuhan)
             const hl7Data = {
-                ...restValues,
+                ...values,
                 date_of_birth: date_of_birth ? dayjs(date_of_birth).format("YYYY-MM-DD") : null,
                 specimen_received: specimen_received ? dayjs(specimen_received).format("YYYY-MM-DD") : null,
             };
-            
-            // Create HL7 blob
+
+            // Buat HL7 blob
             const hl7Blob = new Blob([JSON.stringify(hl7Data)], { type: "application/json" });
-        
-            try {
-                // Create FormData to send files
-                const formData = new FormData();
-                formData.append("pdf", pdfBlob, "report.pdf");
-                formData.append("hl7", hl7Blob, "report.hl7");
-                
-                // Format all form values for server submission
-                const formattedValues = {
-                    ...values,
-                    date_of_birth: date_of_birth ? dayjs(date_of_birth).format("YYYY-MM-DD") : null,
-                    specimen_received: specimen_received ? dayjs(specimen_received).format("YYYY-MM-DD") : null,
-                };
-                formData.append("data", new Blob([JSON.stringify(formattedValues)], { type: "application/json" }), "data.json");
-        
-                // Send data to the server
-                const response = await fetch(`${API_URL}/lab-tests`, {
-                    method: "POST",
-                    body: formData,
-                });
-        
-                if (!response.ok) {
-                    throw new Error("Failed to upload files");
-                }
-        
-                console.log("Record created successfully");
-                return formattedValues;
-            } catch (error) {
-                console.error("Error creating record:", error);
-                throw error;
+            console.log("Generated HL7 Blob:", hl7Blob);
+
+            // Buat objek FormData dan kirim file serta data individual
+            const formData = new FormData();
+            // Appending file, sesuai key yang nantinya diproses oleh backend
+            formData.append("report_download_pdf", pdfBlob, "report.pdf");
+            formData.append("report_download_hl7", hl7Blob, "report.hl7");
+
+            // Append setiap field secara individual agar validator backend dapat membaca
+            formData.append("patient_name", values.patient_name);
+            formData.append("date_of_birth", date_of_birth ? dayjs(date_of_birth).format("YYYY-MM-DD") : "");
+            formData.append("sex", values.sex);
+            formData.append("mrn", values.mrn);
+            formData.append("ethnicity", values.ethnicity);
+            formData.append("specimen_collected_from", values.specimen_collected_from);
+            formData.append("specimen_type", values.specimen_type);
+            formData.append("specimen_id", values.specimen_id);
+            formData.append("specimen_received", specimen_received ? dayjs(specimen_received).format("YYYY-MM-DD") : "");
+            formData.append("test_information", values.test_information);
+            formData.append("lab_result_summary", values.lab_result_summary);
+            formData.append("physician_name", values.physician_name);
+            formData.append("reviewer_name", values.reviewer_name);
+            formData.append("test_case_id", values.test_case_id);
+            formData.append("disease", values.disease);
+
+            // Kirim data ke endpoint yang sesuai (misalnya /lab-tests)
+            const response = await fetch(`${API_URL}/lab-tests`, {
+                method: "POST",
+                body: formData,
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to upload files");
             }
-        },
-    });
+
+            console.log("Record created successfully");
+
+            // Setelah record tersimpan, misalnya tampilkan notifikasi sukses
+            notification.success({
+                message: "Sukses",
+                description: "Lab test berhasil dibuat!",
+            });
+
+            // Dan melakukan redirect ke halaman list atau detail sesuai alur aplikasi
+            navigate("/lab-tests");
+
+            return values;
+        } catch (error: any) {
+            console.error("Error creating record:", error);
+            notification.error({
+                message: "Error",
+                description: error.message || "Terjadi kesalahan ketika menyimpan data",
+            });
+            throw error;
+        }
+    };
 
     return (
         <Create saveButtonProps={saveButtonProps}>
-            <Form {...formProps} layout="vertical">
-                {/* Form fields remain the same */}
+            <Form {...formProps} onFinish={handleFinish} layout="vertical">
                 <Row gutter={16}>
-                    {/* Row 1: 5 fields */}
+                    {/* Kolom 1 */}
                     <Col span={8}>
                         <Form.Item
                             label="Patient Name"
@@ -125,11 +156,7 @@ export const PostCreate: React.FC = () => {
                                 value: value ? dayjs(value) : undefined,
                             })}
                         >
-                            <DatePicker
-                                style={{ width: "100%" }}
-                                format="YYYY-MM-DD"
-                                placeholder="Choose date"
-                            />
+                            <DatePicker style={{ width: "100%" }} format="YYYY-MM-DD" placeholder="Choose date" />
                         </Form.Item>
                         <Form.Item
                             label="Sex"
@@ -152,22 +179,22 @@ export const PostCreate: React.FC = () => {
                             <Input placeholder="Example: Dr Ong" />
                         </Form.Item>
                         <Form.Item
-                                      label="Disease"
-                                      name="disease"
-                                      rules={[{ required: true, message: "Disease is required" }]}
-                                    >
-                                      <Input placeholder="Example: Diabetes" />
-                                    </Form.Item>
-                                    <Form.Item
-                                      label="Ethnicity"
-                                      name="ethnicity"
-                                      rules={[{ required: true, message: "Ethnicity is required" }]}
-                                    >
-                                      <Input placeholder="Example: Hispanic" />
-                                    </Form.Item>
+                            label="Disease"
+                            name="disease"
+                            rules={[{ required: true, message: "Disease is required" }]}
+                        >
+                            <Input placeholder="Example: Diabetes" />
+                        </Form.Item>
+                        <Form.Item
+                            label="Ethnicity"
+                            name="ethnicity"
+                            rules={[{ required: true, message: "Ethnicity is required" }]}
+                        >
+                            <Input placeholder="Example: Hispanic" />
+                        </Form.Item>
                     </Col>
 
-                    {/* Row 2: 5 fields */}
+                    {/* Kolom 2 */}
                     <Col span={8}>
                         <Form.Item
                             label="MRN"
@@ -205,21 +232,14 @@ export const PostCreate: React.FC = () => {
                                 value: value ? dayjs(value) : undefined,
                             })}
                         >
-                            <DatePicker
-                                style={{ width: "100%" }}
-                                format="YYYY-MM-DD"
-                                placeholder="Choose date"
-                            />
+                            <DatePicker style={{ width: "100%" }} format="YYYY-MM-DD" placeholder="Choose date" />
                         </Form.Item>
-                        <Form.Item
-                                      label="Reviewed By"
-                                      name="reviewer_name"
-                                    >
-                                      <Input placeholder="Example: Dr. Ong Kiat Hoe" />
-                                    </Form.Item>
+                        <Form.Item label="Reviewed By" name="reviewer_name">
+                            <Input placeholder="Example: Dr. Ong Kiat Hoe" />
+                        </Form.Item>
                     </Col>
 
-                    {/* Row 3: 3 fields */}
+                    {/* Kolom 3 */}
                     <Col span={8}>
                         <Form.Item
                             label="Test Information"
@@ -243,11 +263,7 @@ export const PostCreate: React.FC = () => {
                                 Array.isArray(e) ? e : e?.fileList
                             }
                         >
-                            <Upload
-                                name="file"
-                                action="/upload.do"
-                                listType="text"
-                            >
+                            <Upload name="file" action="/upload.do" listType="text">
                                 <Button icon={<UploadOutlined />}>Upload CSV</Button>
                             </Upload>
                         </Form.Item>
