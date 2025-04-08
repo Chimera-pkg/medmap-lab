@@ -1,136 +1,192 @@
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import { saveAs } from "file-saver";
 
-// Original function with download
+// Fungsi untuk generate dan download report PDF
 export async function generateReport(data: any, fileName: string) {
-  // Create PDF
   const blob = await generatePDF(data);
-
-  // Save/download the PDF
   saveAs(blob, fileName);
-
-  // Return the blob for server upload if needed
   return blob;
 }
 
-// New function without download
+// Fungsi untuk generate PDF dan mengembalikan blob tanpa download
 export async function generateReportBlob(data: any) {
-  // Just create and return the PDF blob without downloading
   return await generatePDF(data);
 }
 
-// Common PDF generation logic
+// Fungsi pembuat PDF dengan layout baru dan header logo menggunakan public asset
 async function generatePDF(data: any) {
-  // Create a new PDF document
+  // Membuat dokumen PDF dan halaman A4
   const pdfDoc = await PDFDocument.create();
+  const page = pdfDoc.addPage([595, 842]);
+  const pageWidth = page.getWidth();
+  const leftMargin = 50;
 
-  // Add a page to the document
-  const page = pdfDoc.addPage([595, 842]); // A4 size
+  // Embed font standar
+  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-  // Embed the standard font
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  // === Load logo dari public assets ===
+  // Pastikan file logo tersedia di folder public, misalnya "/hospital-logo.png" dan "/cap-logo.png"
+  // Load logos
+  const hospitalLogoUrl = "/hospital-logo.png";
+  const capLogoUrl = "/cap-logo.png";
+  const hospitalLogoBytes = await fetch(hospitalLogoUrl).then((res) =>
+    res.arrayBuffer()
+  );
+  const capLogoBytes = await fetch(capLogoUrl).then((res) => res.arrayBuffer());
+  const hospitalLogo = await pdfDoc.embedPng(hospitalLogoBytes);
+  const capLogo = await pdfDoc.embedPng(capLogoBytes);
 
-  // Set font size and line height
-  const fontSize = 10;
-  const lineHeight = 15;
-
-  // Draw header
-  page.drawText("TAN TOCK SENG HOSPITAL", {
-    x: 50,
-    y: 800,
-    size: 18,
-    font: boldFont,
-  });
-
-  page.drawText("11 Jalan Tan Tock Seng, Singapore 308433", {
-    x: 300,
+  // Draw logos
+  page.drawImage(hospitalLogo, {
+    x: leftMargin,
     y: 780,
-    size: 10,
-    font,
+    width: 447.48 / 2, // Scale down by 50%
+    height: 168 / 2,
   });
 
-  // Draw title
-  page.drawText("PHARMACOGENOMICS REPORT", {
-    x: 180,
+  page.drawImage(capLogo, {
+    x: pageWidth - leftMargin - 333.14 / 2, // Align to the right
+    y: 780,
+    width: 333.14 / 2, // Scale down by 50%
+    height: 191 / 2,
+  });
+
+  // Draw header text
+  const headerFontSize = 18;
+  const subHeaderFontSize = 10;
+  const titleFontSize = 14;
+  const blueColor = rgb(0, 0.75, 1);
+
+  // Nama Rumah Sakit (center aligned)
+  const hospitalName = "TAN TOCK SENG HOSPITAL";
+  page.drawText(hospitalName, {
+    x:
+      (pageWidth - fontBold.widthOfTextAtSize(hospitalName, headerFontSize)) /
+      2,
+    y: 800,
+    size: headerFontSize,
+    font: fontBold,
+  });
+
+  // Alamat
+  const address = "11 Jalan Tan Tock Seng, Singapore 308433";
+  page.drawText(address, {
+    x:
+      (pageWidth - fontRegular.widthOfTextAtSize(address, subHeaderFontSize)) /
+      2,
+    y: 785,
+    size: subHeaderFontSize,
+    font: fontRegular,
+  });
+
+  // Add "Molecular Diagnostic Laboratory" and "General Enquiries"
+  page.drawText("MOLECULAR DIAGNOSTIC LABORATORY", {
+    x:
+      (pageWidth -
+        fontBold.widthOfTextAtSize(
+          "MOLECULAR DIAGNOSTIC LABORATORY",
+          subHeaderFontSize
+        )) /
+      2,
+    y: 770,
+    size: subHeaderFontSize,
+    font: fontBold,
+  });
+
+  page.drawText("General Enquiries: 6357 7389", {
+    x:
+      (pageWidth -
+        fontRegular.widthOfTextAtSize(
+          "General Enquiries: 6357 7389",
+          subHeaderFontSize
+        )) /
+      2,
+    y: 755,
+    size: subHeaderFontSize,
+    font: fontRegular,
+  });
+
+  // Draw "Pharmacogenomics Report" with background
+  const reportTitle = "PHARMACOGENOMICS REPORT";
+  const reportTitleWidth = fontBold.widthOfTextAtSize(
+    reportTitle,
+    titleFontSize
+  );
+  const reportTitleX = (pageWidth - reportTitleWidth) / 2;
+
+  page.drawRectangle({
+    x: reportTitleX - 10, // Add padding
+    y: 735,
+    width: reportTitleWidth + 20,
+    height: 25,
+    color: blueColor,
+  });
+
+  page.drawText(reportTitle, {
+    x: reportTitleX,
     y: 740,
-    size: 14,
-    font: boldFont,
-    color: rgb(0, 0.75, 1),
+    size: titleFontSize,
+    font: fontBold,
+    color: rgb(0, 0, 0), // Black text
   });
 
-  // Draw sections
-  let yPos = 700;
+  // === Mulai bagian isi report ===
+  // Atur posisi y untuk mulai menggambar bagian bawah header
+  let yPos = 720;
 
-  // Patient section
-  page.drawText("PATIENT", { x: 50, y: yPos, size: 12, font: boldFont });
-  yPos -= 20;
-
-  Object.entries(data.patient).forEach(([key, value]) => {
-    page.drawText(`${key}: ${value || "N/A"}`, {
-      x: 50,
-      y: yPos,
-      size: fontSize,
-      font,
+  // Fungsi untuk menggambar header section dengan latar belakang biru
+  function drawBlueHeader(text: string) {
+    const headerWidth = fontBold.widthOfTextAtSize(text, 12);
+    page.drawRectangle({
+      x: leftMargin,
+      y: yPos - 5,
+      width: headerWidth + 10,
+      height: 20,
+      color: blueColor,
     });
-    yPos -= lineHeight;
-  });
-
-  yPos -= 10;
-
-  // Specimen section
-  page.drawText("SPECIMEN", { x: 50, y: yPos, size: 12, font: boldFont });
-  yPos -= 20;
-
-  Object.entries(data.specimen).forEach(([key, value]) => {
-    page.drawText(`${key}: ${value || "N/A"}`, {
-      x: 50,
+    page.drawText(text, {
+      x: leftMargin + 5,
       y: yPos,
-      size: fontSize,
-      font,
+      size: 12,
+      font: fontBold,
+      color: rgb(1, 1, 1),
     });
-    yPos -= lineHeight;
-  });
+    yPos -= 30;
+  }
 
-  yPos -= 10;
-
-  // Ordered By section
-  page.drawText("ORDERED BY", { x: 50, y: yPos, size: 12, font: boldFont });
-  yPos -= 20;
-
-  Object.entries(data.orderedBy).forEach(([key, value]) => {
-    page.drawText(`${key}: ${value || "N/A"}`, {
-      x: 50,
-      y: yPos,
-      size: fontSize,
-      font,
+  // Fungsi untuk menggambar data dalam format key-value
+  function drawKeyValueSection(dataSection: any) {
+    Object.entries(dataSection).forEach(([key, value]) => {
+      page.drawText(`${key}: ${value || "N/A"}`, {
+        x: leftMargin,
+        y: yPos,
+        size: 10,
+        font: fontRegular,
+      });
+      yPos -= 15;
     });
-    yPos -= lineHeight;
-  });
+    yPos -= 10;
+  }
 
-  yPos -= 10;
+  // Bagian PATIENT
+  drawBlueHeader("PATIENT");
+  drawKeyValueSection(data.patient);
 
-  // Case Info section
-  page.drawText("CASE", { x: 50, y: yPos, size: 12, font: boldFont });
-  yPos -= 20;
+  // Bagian SPECIMEN
+  drawBlueHeader("SPECIMEN");
+  drawKeyValueSection(data.specimen);
 
-  Object.entries(data.caseInfo).forEach(([key, value]) => {
-    page.drawText(`${key}: ${value || "N/A"}`, {
-      x: 50,
-      y: yPos,
-      size: fontSize,
-      font,
-    });
-    yPos -= lineHeight;
-  });
+  // Bagian ORDERED BY
+  drawBlueHeader("ORDERED BY");
+  drawKeyValueSection(data.orderedBy);
 
-  yPos -= 20;
+  // Bagian CASE
+  drawBlueHeader("CASE");
+  drawKeyValueSection(data.caseInfo);
 
-  // Test Results table
-  page.drawText("TEST RESULTS", { x: 50, y: yPos, size: 12, font: boldFont });
-  yPos -= 20;
-
-  // Table headers
+  // Bagian TEST RESULTS (tabel)
+  drawBlueHeader("TEST RESULTS");
   const headers = [
     "Drug",
     "Gene",
@@ -140,19 +196,21 @@ async function generatePDF(data: any) {
     "Dosage",
     "Efficacy",
   ];
-  const colWidths = [80, 80, 80, 90, 80, 80, 80];
-  let xPos = 50;
-
-  headers.forEach((header, i) => {
-    page.drawText(header, { x: xPos, y: yPos, size: 8, font: boldFont });
-    xPos += colWidths[i];
+  const colWidth = (pageWidth - leftMargin * 2) / headers.length;
+  let xPos = leftMargin;
+  headers.forEach((header) => {
+    page.drawText(header, {
+      x: xPos,
+      y: yPos,
+      size: 10,
+      font: fontBold,
+    });
+    xPos += colWidth;
   });
-
   yPos -= 15;
 
-  // Table rows
   data.testResults.forEach((row: any) => {
-    xPos = 50;
+    xPos = leftMargin;
     const values = [
       row.drug,
       row.gene,
@@ -162,39 +220,51 @@ async function generatePDF(data: any) {
       row.dosage,
       row.efficacy,
     ];
-
-    values.forEach((value, i) => {
-      page.drawText(value || "-", { x: xPos, y: yPos, size: 8, font });
-      xPos += colWidths[i];
+    values.forEach((value) => {
+      page.drawText(value || "-", {
+        x: xPos,
+        y: yPos,
+        size: 10,
+        font: fontRegular,
+      });
+      xPos += colWidth;
     });
-
     yPos -= 15;
   });
 
+  // === Footer dengan word wrapping ===
   yPos -= 30;
-
-  // Footer
   const footerText = data.footerText;
-  const textWidth = 500;
+  const footerFontSize = 7;
+  const footerWidth = pageWidth - leftMargin * 2;
   const words = footerText.split(" ");
   let line = "";
 
   words.forEach((word: string) => {
     const testLine = line + word + " ";
-    if (font.widthOfTextAtSize(testLine, 7) > textWidth) {
-      page.drawText(line, { x: 50, y: yPos, size: 7, font });
+    if (fontRegular.widthOfTextAtSize(testLine, footerFontSize) > footerWidth) {
+      page.drawText(line, {
+        x: leftMargin,
+        y: yPos,
+        size: footerFontSize,
+        font: fontRegular,
+      });
       line = word + " ";
       yPos -= 10;
     } else {
       line = testLine;
     }
   });
-
   if (line) {
-    page.drawText(line, { x: 50, y: yPos, size: 7, font });
+    page.drawText(line, {
+      x: leftMargin,
+      y: yPos,
+      size: footerFontSize,
+      font: fontRegular,
+    });
   }
 
-  // Save the PDF to bytes
+  // Simpan PDF dan kembalikan Blob
   const pdfBytes = await pdfDoc.save();
   return new Blob([pdfBytes], { type: "application/pdf" });
 }
