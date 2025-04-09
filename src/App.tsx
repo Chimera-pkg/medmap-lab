@@ -3,27 +3,17 @@ import {
   Refine,
   type AuthProvider,
   Authenticated,
+  OnErrorResponse,
 } from "@refinedev/core";
 import {
   useNotificationProvider,
   ThemedLayoutV2,
   ErrorComponent,
-  AuthPage,
   RefineThemes,
 } from "@refinedev/antd";
 import {
-  GoogleOutlined,
-  GithubOutlined,
-  DashboardOutlined,
-  UserOutlined,
-  ScheduleFilled,
-  FileAddFilled,
-  MessageFilled,
-  DiffOutlined,
   TableOutlined,
-  ScheduleOutlined,
   FileAddOutlined,
-  MessageOutlined,
 } from "@ant-design/icons";
 
 import dataProvider from "@refinedev/simple-rest";
@@ -39,26 +29,18 @@ import { App as AntdApp, ConfigProvider } from "antd";
 import "@refinedev/antd/dist/reset.css";
 
 import { PostList, PostEdit, PostShow, PostCreate } from "./pages/labTest";
-import { DashboardPage } from "../src/pages/dashboard";
+import { DashboardPage } from "./pages/dashboard";
 import PdfViewer from "./pages/viewers/pdf-viewer";
 import Hl7Viewer from "./pages/viewers/hl7-viewer";
+import Login from "./auth/login";
+import Register from "./auth/register";
 
-const API_URL = "http://localhost:3333/v1";
-
-
-/**
- *  mock auth credentials to simulate authentication
- */
-const authCredentials = {
-  email: "demo@refine.dev",
-  password: "demodemo",
-};
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3333/v1";
 
 const App: React.FC = () => {
   const authProvider: AuthProvider = {
     login: async ({ email, password }) => {
       try {
-        // Make a POST request to the login endpoint
         const response = await fetch(`${API_URL}/auth/login`, {
           method: "POST",
           headers: {
@@ -66,16 +48,14 @@ const App: React.FC = () => {
           },
           body: JSON.stringify({ email, password }),
         });
-  
+
         if (!response.ok) {
           throw new Error("Login failed");
         }
-  
+
         const { token } = await response.json();
-  
-        // Store the token in localStorage
         localStorage.setItem("authToken", token);
-  
+
         return {
           success: true,
           redirectTo: "/",
@@ -91,7 +71,6 @@ const App: React.FC = () => {
       }
     },
     logout: async () => {
-      // Remove the token from localStorage
       localStorage.removeItem("authToken");
       return {
         success: true,
@@ -118,27 +97,18 @@ const App: React.FC = () => {
     getIdentity: async () => {
       const token = localStorage.getItem("authToken");
       if (token) {
-        // Optionally, decode the token or fetch user details
         return {
           id: 1,
           name: "Jane Doe",
-          avatar:
-            "https://unsplash.com/photos/IWLOvomUmWU/download?force=true&w=640",
+          avatar: "https://unsplash.com/photos/IWLOvomUmWU/download?force=true&w=640",
         };
       }
       return null;
     },
     getPermissions: async () => null,
-    onError: async (error) => {
-      console.error("AuthProvider Error:", error);
-      return Promise.resolve({
-        success: false,
-        error: {
-          message: "An error occurred",
-          name: "AuthProviderError",
-        },
-      });
-    },
+    onError: function (error: any): Promise<OnErrorResponse> {
+      throw new Error("Function not implemented.");
+    }
   };
 
   return (
@@ -159,45 +129,6 @@ const App: React.FC = () => {
                   icon: <TableOutlined />,
                 },
               },
-              // {
-              //   name: "cases",
-              //   list: "/posts",
-              //   show: "/posts/show/:id",
-              //   edit: "/posts/edit/:id",
-              //   icon: <DiffOutlined />,
-
-              // },
-              // {
-              //   name: "patient",
-              //   list: "/posts",
-              //   show: "/posts/show/:id",
-              //   edit: "/posts/edit/:id",
-              //   icon: <UserOutlined />,
-
-              // },
-              // {
-              //   name: "schedule",
-              //   list: "/posts",
-              //   show: "/posts/show/:id",
-              //   edit: "/posts/edit/:id",
-              //   icon: <ScheduleOutlined />,
-
-              // },
-              // {
-              //   name: "reports",
-              //   list: "/posts",
-              //   show: "/posts/show/:id",
-              //   edit: "/posts/edit/:id",
-              //   icon: <FileAddOutlined />,
-
-              // },
-              // {
-              //   name: "messages",
-              //   list: "/posts",
-              //   show: "/posts/show/:id",
-              //   edit: "/posts/edit/:id",
-              //   icon: <MessageOutlined />,
-              // },
               {
                 name: "lab-tests",
                 list: "/lab-tests",
@@ -206,7 +137,6 @@ const App: React.FC = () => {
                 create: "/lab-tests/create",
                 icon: <FileAddOutlined />,
               },
-              
             ]}
             notificationProvider={useNotificationProvider}
             options={{
@@ -236,99 +166,11 @@ const App: React.FC = () => {
                   <Route path="edit/:id" element={<PostEdit />} />
                   <Route path="show/:id" element={<PostShow />} />
                   <Route path="create" element={<PostCreate />} />
-                  
                 </Route>
               </Route>
 
-              <Route
-                element={
-                  <Authenticated key="auth-pages" fallback={<Outlet />}>
-                    <NavigateToResource resource="posts" />
-                  </Authenticated>
-                }
-              >
-                <Route
-                  path="/login"
-                  element={
-                    <AuthPage
-                      type="login"
-                      formProps={{
-                        initialValues: {
-                          ...authCredentials,
-                        },
-                      }}
-                      providers={[
-                        {
-                          name: "google",
-                          label: "Sign in with Google",
-                          icon: (
-                            <GoogleOutlined
-                              style={{
-                                fontSize: 24,
-                                lineHeight: 0,
-                              }}
-                            />
-                          ),
-                        },
-                        {
-                          name: "github",
-                          label: "Sign in with GitHub",
-                          icon: (
-                            <GithubOutlined
-                              style={{
-                                fontSize: 24,
-                                lineHeight: 0,
-                              }}
-                            />
-                          ),
-                        },
-                      ]}
-                    />
-                  }
-                />
-                <Route
-                  path="/register"
-                  element={
-                    <AuthPage
-                      type="register"
-                      providers={[
-                        {
-                          name: "google",
-                          label: "Sign in with Google",
-                          icon: (
-                            <GoogleOutlined
-                              style={{
-                                fontSize: 24,
-                                lineHeight: 0,
-                              }}
-                            />
-                          ),
-                        },
-                        {
-                          name: "github",
-                          label: "Sign in with GitHub",
-                          icon: (
-                            <GithubOutlined
-                              style={{
-                                fontSize: 24,
-                                lineHeight: 0,
-                              }}
-                            />
-                          ),
-                        },
-                      ]}
-                    />
-                  }
-                />
-                <Route
-                  path="/forgot-password"
-                  element={<AuthPage type="forgotPassword" />}
-                />
-                <Route
-                  path="/update-password"
-                  element={<AuthPage type="updatePassword" />}
-                />
-              </Route>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
 
               <Route
                 element={

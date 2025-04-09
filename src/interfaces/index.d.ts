@@ -18,3 +18,11 @@ export interface ILabTest {
   specimen_type: string;
   report_status: string;
 }
+
+export interface AuthProvider {
+  login: (params: any) => Promise<{ success: boolean; redirectTo?: string }>;
+  logout: () => Promise<{ success: boolean; redirectTo?: string }>;
+  check: () => Promise<{ authenticated: boolean; redirectTo?: string }>;
+  getIdentity?: () => Promise<any>;
+  getPermissions?: () => Promise<any>;
+}
