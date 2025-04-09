@@ -113,7 +113,6 @@ const App: React.FC = () => {
 
   return (
     <BrowserRouter>
-      <GitHubBanner />
       <ConfigProvider theme={RefineThemes.Blue}>
         <AntdApp>
           <Refine
