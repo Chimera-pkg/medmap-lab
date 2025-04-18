@@ -12,7 +12,7 @@ const Login: React.FC = () => {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch("http://localhost:3333/v1/auth/login", {
+      const response = await fetch(`${API_URL}/v1/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
