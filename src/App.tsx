@@ -34,8 +34,8 @@ import PdfViewer from "./pages/viewers/pdf-viewer";
 import Hl7Viewer from "./pages/viewers/hl7-viewer";
 import Login from "./auth/login";
 import Register from "./auth/register";
+import { API_URL } from "./config";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3333/v1";
 
 const App: React.FC = () => {
   const authProvider: AuthProvider = {
