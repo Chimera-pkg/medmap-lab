@@ -33,7 +33,7 @@ export const PostList = () => {
       onOk: async () => {
         try {
           const token = localStorage.getItem("authToken");
-          const response = await fetch(`${API_URL}/lab-tests/${record.id}`, {
+          const response = await fetch(`${API_URL}/v1/lab-tests/${record.id}`, {
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",
