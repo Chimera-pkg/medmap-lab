@@ -97,7 +97,7 @@ export const PostCreate: React.FC = () => {
             formData.append("disease", values.disease);
 
             // Kirim data ke endpoint yang sesuai (misalnya /lab-tests)
-            const response = await fetch(`${API_URL}/v1/lab-tests`, {
+            const response = await fetch(`${API_URL}/lab-tests`, {
                 method: "POST",
                 body: formData,
             });
