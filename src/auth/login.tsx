@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { GoogleOutlined, GithubOutlined } from "@ant-design/icons";
-import { API_URL } from "../config";
+import { API_URL, LOGIN_URL } from "../config";
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState("sampleuser@email.com");
-  const [password, setPassword] = useState("********");
+  const [email, setEmail] = useState("admin@mail.com");
+  const [password, setPassword] = useState("admin");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -13,7 +13,7 @@ const Login: React.FC = () => {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const response = await fetch(`${LOGIN_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
