@@ -6,6 +6,7 @@ import dayjs from "dayjs";
 import { generateReportBlob } from "../../utils/generateReport";
 import { API_URL } from "../../config";
 import { useNavigate } from "react-router-dom";
+import { buildHL7Message } from "../../utils/generateHl7";
 
 export const PostCreate: React.FC = () => {
     // Misalnya untuk redirect setelah sukses
@@ -62,22 +63,28 @@ export const PostCreate: React.FC = () => {
             const pdfBlob = await generateReportBlob(reportData);
             console.log("Generated PDF Blob:", pdfBlob);
 
-            // Format data HL7 (dapat disesuaikan sesuai kebutuhan)
-            const hl7Data = {
+             // Generate HL7 message using the buildHL7Message function
+            const hl7Message = buildHL7Message({
                 ...values,
                 date_of_birth: date_of_birth ? dayjs(date_of_birth).format("YYYY-MM-DD") : null,
                 specimen_received: specimen_received ? dayjs(specimen_received).format("YYYY-MM-DD") : null,
-            };
+                testResults: [
+                    {
+                        genotype: "Example Genotype", // Replace with actual genotype data if available
+                    },
+                ],
+            });
 
-            // Buat HL7 blob
-            const hl7Blob = new Blob([JSON.stringify(hl7Data)], { type: "application/json" });
+                    // Create HL7 blob
+            const hl7Blob = new Blob([hl7Message], { type: "text/plain" });
             console.log("Generated HL7 Blob:", hl7Blob);
 
-            // Buat objek FormData dan kirim file serta data individual
+
+                    // Create FormData object and append files and individual fields
             const formData = new FormData();
-            // Appending file, sesuai key yang nantinya diproses oleh backend
             formData.append("report_download_pdf", pdfBlob, "report.pdf");
             formData.append("report_download_hl7", hl7Blob, "report.hl7");
+
 
             // Append setiap field secara individual agar validator backend dapat membaca
             formData.append("patient_name", values.patient_name);
@@ -111,7 +118,7 @@ export const PostCreate: React.FC = () => {
             // Setelah record tersimpan, misalnya tampilkan notifikasi sukses
             notification.success({
                 message: "Sukses",
-                description: "Lab test berhasil dibuat!",
+                description: "Lab test Created!",
             });
 
             // Dan melakukan redirect ke halaman list atau detail sesuai alur aplikasi
