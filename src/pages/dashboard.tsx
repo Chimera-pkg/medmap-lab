@@ -15,6 +15,7 @@ export const DashboardPage: React.FC = () => {
   });
 
   return (
+    
     <Row gutter={20}>
       <Col span={6}>
         <Card

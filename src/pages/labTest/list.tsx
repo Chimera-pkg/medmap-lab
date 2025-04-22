@@ -149,7 +149,7 @@ export const PostList = () => {
                   >
                     HL7
                   </Button>
-                  <Button
+                  {/* <Button
                     type="link"
                     icon={<EyeOutlined />}
                     onClick={() => {
@@ -160,7 +160,7 @@ export const PostList = () => {
                     }}
                   >
                     View
-                  </Button>
+                  </Button> */}
                 </Space>
               ) : (
                 <span>No HL7</span>
