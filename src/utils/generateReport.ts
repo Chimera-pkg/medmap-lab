@@ -262,11 +262,11 @@ async function generatePDF(data: any) {
   });
   yPos -= 15;
 
-  // Contoh 2 paragraf untuk test information
-  const testInfoParagraphs = data.testInformation || [
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam scelerisque, sapien vitae sodales suscipit, ligula eros convallis mauris, sed euismod dui lectus vel neque.",
-    "Sed tincidunt lectus enim, vitae hendrerit neque aliquet non. Phasellus neque nulla, dapibus ac pellentesque sed, pretium tempus nisl.",
-  ];
+  // Use the `test_information` field from the input data
+  const testInfoParagraphs = data.test_information
+    ? data.test_information.split("\n") // Split into paragraphs if multiline
+    : ["No test information provided."];
+
   const paragraphFontSize = 9;
   testInfoParagraphs.forEach((para: string) => {
     const wrapped = wrapText(
@@ -316,27 +316,22 @@ async function generatePDF(data: any) {
   });
   yPos -= 35;
 
-  // === 2 BARIS: BACKGROUND GREY, dan TULISAN "WARFARIN (2.86mg)" ===
-  ensureSpace(50);
-  const greyColor = rgb(0.9, 0.9, 0.9);
-  for (let i = 0; i < 2; i++) {
-    page.drawRectangle({
+  // Use the `lab_result_summary` field from the input data
+  const labResultSummary = data.lab_result_summary
+    ? data.lab_result_summary.split("\n") // Split into paragraphs if multiline
+    : ["No result summary provided."];
+
+  labResultSummary.forEach((line: string) => {
+    ensureSpace(12);
+    page.drawText(line, {
       x: leftMargin,
       y: yPos,
-      width: pageWidth - 2 * leftMargin,
-      height: 20,
-      color: greyColor,
-    });
-    const warfarinText = "Warfarin (2.86mg)";
-    page.drawText(warfarinText, {
-      x: leftMargin + 30,
-      y: yPos + 5,
       size: 9,
-      font: fontBold,
+      font: fontRegular,
       color: rgb(0, 0, 0),
     });
-    yPos -= 20;
-  }
+    yPos -= 12;
+  });
   yPos -= 10;
 
   // === NOTE (catatan) ===

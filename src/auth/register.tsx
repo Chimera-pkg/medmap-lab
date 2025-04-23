@@ -10,7 +10,7 @@ const Register: React.FC = () => {
   const [form] = Form.useForm();
 
   const handleRegister = async (values: { 
-    name: string; 
+    username: string; 
     email: string; 
     password: string; 
     confirmPassword: string; 
@@ -26,11 +26,11 @@ const Register: React.FC = () => {
     
     try {
       console.log("Attempting registration with:", values.email);
-      const response = await fetch(`${API_URL}/auth/register`, {
+      const response = await fetch(`${API_URL}/auth/register/admin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          name: values.name,
+          username: values.username,
           email: values.email, 
           password: values.password 
         }),
@@ -99,7 +99,7 @@ const Register: React.FC = () => {
           >
             {/* Full Name */}
             <Form.Item
-              name="name"
+              name="username"
               label="Full Name"
               rules={[{ required: true, message: "Please input your full name!" }]}
             >

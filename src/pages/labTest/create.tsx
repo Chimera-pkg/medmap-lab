@@ -30,11 +30,11 @@ export const PostCreate: React.FC = () => {
             specimen: {
                 "Specimen Type": values.specimen_type,
                 "Specimen ID": values.specimen_id,
-                "Collected": values.specimen_collected_from || "N/A",
-                "Received": specimen_received ? dayjs(specimen_received).format("YYYY-MM-DD") : null,
+                "Specimen Collected": values.specimen_collected_from || "N/A",
+                "Specimen Received": specimen_received ? dayjs(specimen_received).format("YYYY-MM-DD") : null,
             },
             orderedBy: {
-                Requester: "TTSH",
+                Requester: "TTSH Hospital",
                 Physician: values.physician_name,
             },
             caseInfo: {
