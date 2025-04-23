@@ -35,6 +35,7 @@ import Hl7Viewer from "./pages/viewers/hl7-viewer";
 import Login from "./auth/login";
 import Register from "./auth/register";
 import { API_URL } from "./config";
+import { CustomLayout } from "./components/layout/CustomLayout";
 
 
 const App: React.FC = () => {
@@ -96,10 +97,11 @@ const App: React.FC = () => {
     },
     getIdentity: async () => {
       const token = localStorage.getItem("authToken");
+      const name = localStorage.getItem("userName");
       if (token) {
         return {
           id: 1,
-          name: "Jane Doe",
+          name: name || "User",
           avatar: "https://unsplash.com/photos/IWLOvomUmWU/download?force=true&w=640",
         };
       }
@@ -120,14 +122,14 @@ const App: React.FC = () => {
             dataProvider={dataProvider(API_URL)}
             routerProvider={routerProvider}
             resources={[
-              {
-                name: "Overview",
-                list: "/",
-                meta: {
-                  label: "Overview",
-                  icon: <TableOutlined />,
-                },
-              },
+              // {
+              //   name: "Overview",
+              //   list: "/",
+              //   meta: {
+              //     label: "Overview",
+              //     icon: <TableOutlined />,
+              //   },
+              // },
               {
                 name: "lab-tests",
                 list: "/lab-tests",
@@ -150,9 +152,9 @@ const App: React.FC = () => {
                     key="authenticated-routes"
                     fallback={<CatchAllNavigate to="/login" />}
                   >
-                    <ThemedLayoutV2>
+                    <CustomLayout>
                       <Outlet />
-                    </ThemedLayoutV2>
+                    </CustomLayout>
                   </Authenticated>
                 }
               >
@@ -174,9 +176,9 @@ const App: React.FC = () => {
               <Route
                 element={
                   <Authenticated key="catch-all">
-                    <ThemedLayoutV2>
+                    <CustomLayout>
                       <Outlet />
-                    </ThemedLayoutV2>
+                    </CustomLayout>
                   </Authenticated>
                 }
               >

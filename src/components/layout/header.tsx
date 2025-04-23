@@ -5,11 +5,13 @@ import {
   useActiveAuthProvider,
   useGetIdentity,
 } from "@refinedev/core";
-import type { RefineThemedLayoutV2HeaderProps } from "@refinedev/antd";
 
+export type RefineThemedHeadProps = {
+  isSticky?: boolean;
+  sticky?: boolean;
+};
 
-
-export const ThemedHeaderV2: React.FC<RefineThemedLayoutV2HeaderProps> = ({
+export const Header: React.FC<RefineThemedHeadProps> = ({
   isSticky,
   sticky,
 }) => {
@@ -29,7 +31,7 @@ export const ThemedHeaderV2: React.FC<RefineThemedLayoutV2HeaderProps> = ({
   const headerStyles: React.CSSProperties = {
     backgroundColor: token.colorBgElevated,
     display: "flex",
-    justifyContent: "flex-end",
+    justifyContent: "flex-end", // Adjusted to space-between to accommodate logo on the left
     alignItems: "center",
     padding: "0px 24px",
     height: "64px",
@@ -43,6 +45,8 @@ export const ThemedHeaderV2: React.FC<RefineThemedLayoutV2HeaderProps> = ({
 
   return (
     <AntdLayout.Header style={headerStyles}>
+      <Space>
+      </Space>
       <Space>
         <Space size="middle">
           {user?.name && <Typography.Text strong>{user.name}</Typography.Text>}

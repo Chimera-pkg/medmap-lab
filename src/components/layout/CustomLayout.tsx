@@ -2,15 +2,14 @@ import React, { useMemo } from "react";
 import { Grid, Layout as AntdLayout } from "antd";
 
 import { ThemedSiderV2 as DefaultSider } from "./sider";
-import { ThemedHeaderV2 as DefaultHeader } from "./header";
+import { Header as DefaultHeader } from "./header";
 import type { RefineThemedLayoutV2Props as BaseRefineThemedLayoutV2Props } from "@refinedev/antd";
 
 export type RefineThemedLayoutV2Props = BaseRefineThemedLayoutV2Props;
 import { ThemedLayoutContextProvider } from "@refinedev/antd";
 
-export const ThemedLayoutV2: React.FC<RefineThemedLayoutV2Props> = ({
+export const CustomLayout: React.FC<RefineThemedLayoutV2Props> = ({
   children,
-  Header,
   Sider,
   Title,
   Footer,
@@ -20,7 +19,7 @@ export const ThemedLayoutV2: React.FC<RefineThemedLayoutV2Props> = ({
 }) => {
   const breakpoint = Grid.useBreakpoint();
   const SiderToRender = Sider ?? DefaultSider;
-  const HeaderToRender = Header ?? DefaultHeader;
+  const HeaderToRender =  DefaultHeader;
   const isSmall = typeof breakpoint.sm === "undefined" ? true : breakpoint.sm;
   const hasSider = !!SiderToRender({ Title });
 
