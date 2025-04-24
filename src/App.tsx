@@ -35,7 +35,7 @@ import Hl7Viewer from "./pages/viewers/hl7-viewer";
 import Login from "./auth/login";
 import Register from "./auth/register";
 import { API_URL } from "./config";
-import { CustomLayout } from "./components/layout/CustomLayout";
+import { CustomLayout } from "./components/layout/Layout";
 
 
 const App: React.FC = () => {
