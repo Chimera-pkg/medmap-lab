@@ -43,6 +43,8 @@ export const PostCreate: React.FC = () => {
                 "Date Accessioned": dayjs().format("YYYY-MM-DD"),
                 "Date Reported": dayjs().format("YYYY-MM-DD"),
             },
+            test_information: values.test_information, // Pastikan ini ada
+            lab_result_summary: values.lab_result_summary,
             testResults: [
                 {
                     drug: "Warfarin",
@@ -54,8 +56,8 @@ export const PostCreate: React.FC = () => {
                     efficacy: "–",
                 },
             ],
-            footerText:
-                "The lab-developed pharmacogenomic assay tests for ABCG2, CYP2C19, CYP2C9, CYP2D6, CYP3A5, CYP4F2, DPYD, HLA-A, HLA-B, NUDT15, SLCO1B1, TPMT, UGT1A1, and VKORC1 gene variants by Taqman SNP Genotyping Assays on Quantstudio 6 Flex Real-time PCR system from Thermo Fisher Scientific.",
+            // footerText:
+            //     "The lab-developed pharmacogenomic assay tests for ABCG2, CYP2C19, CYP2C9, CYP2D6, CYP3A5, CYP4F2, DPYD, HLA-A, HLA-B, NUDT15, SLCO1B1, TPMT, UGT1A1, and VKORC1 gene variants by Taqman SNP Genotyping Assays on Quantstudio 6 Flex Real-time PCR system from Thermo Fisher Scientific.",
         };
 
         try {
