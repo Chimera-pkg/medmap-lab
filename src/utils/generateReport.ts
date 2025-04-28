@@ -392,7 +392,7 @@ async function generatePDF(data: any) {
 
   // Atur tinggi header
   const headerMainHeight = 20; // tinggi baris header utama
-  const headerSubHeight = 12; // tinggi baris header sub
+  const headerSubHeight = 50; // tinggi baris header sub
   const headerTotalHeight = headerMainHeight + headerSubHeight;
 
   // Fungsi bantu untuk menggambar garis horizontal
@@ -532,15 +532,6 @@ async function generatePDF(data: any) {
   testResults.forEach((row: any, rowIndex: number) => {
     // Simpan posisi baris saat ini (row top)
     const rowTopY = yPos;
-
-    // Tambahkan latar belakang abu-abu untuk baris Clinical Action
-    page.drawRectangle({
-      x: leftMargin,
-      y: yPos - 20,
-      width: tableTotalWidth,
-      height: 20,
-      color: rgb(0.9, 0.9, 0.9), // Warna abu-abu
-    });
 
     // Split rows for columns with arrays (GENE, GENOTYPE, PHENOTYPE)
     const maxRows = Math.max(
