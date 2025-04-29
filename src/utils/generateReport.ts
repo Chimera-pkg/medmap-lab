@@ -392,7 +392,7 @@ async function generatePDF(data: any) {
 
   // Atur tinggi header
   const headerMainHeight = 20; // tinggi baris header utama
-  const headerSubHeight = 50; // tinggi baris header sub
+  const headerSubHeight = 20; // tinggi baris header sub
   const headerTotalHeight = headerMainHeight + headerSubHeight;
 
   // Fungsi bantu untuk menggambar garis horizontal
@@ -584,7 +584,7 @@ async function generatePDF(data: any) {
 
       // Gambar teks di setiap kolom dengan fontRegular (non-bold)
       for (let j = 0; j < tableColCount; j++) {
-        let tempY = yPos;
+        let tempY = yPos - 8;
         wrappedLinesPerCol[j].forEach((line) => {
           page.drawText(line, {
             x: leftMargin + j * colWidth + 5,
