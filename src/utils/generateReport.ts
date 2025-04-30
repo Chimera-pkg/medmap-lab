@@ -221,16 +221,32 @@ async function generatePDF(data: any) {
   columnData.forEach((colObj, i) => {
     let tempY = yPos;
     const xPos = leftMargin + i * columnWidth;
+
     Object.keys(colObj).forEach((key) => {
-      const text = `${key}: ${colObj[key]}`;
-      ensureSpace(12);
-      page.drawText(text, {
+      // Draw the key (e.g., "Patient Name:")
+      const keyText = `${key}:`;
+      page.drawText(keyText, {
+        x: xPos,
+        y: tempY,
+        size: 8,
+        font: fontBold,
+        color: rgb(0, 0, 0),
+      });
+
+      // Move to the next line for the value
+      tempY -= 12;
+
+      // Draw the value (e.g., "John Doe")
+      const valueText = `${colObj[key]}`;
+      page.drawText(valueText, {
         x: xPos,
         y: tempY,
         size: 8,
         font: fontRegular,
         color: rgb(0, 0, 0),
       });
+
+      // Move to the next line for the next key-value pair
       tempY -= 12;
     });
     if (tempY < maxColumnHeight) {
@@ -480,9 +496,8 @@ async function generatePDF(data: any) {
     "GENE",
     "GENOTYPE",
     "PHENOTYPE",
+    "",
     "DRUG RESPONSE",
-    "",
-    "",
     "",
     "EVIDENCE",
   ];
@@ -570,14 +585,14 @@ async function generatePDF(data: any) {
   // ------- BAGIAN BODY (Isi Tabel Test Result) -------
   const testResults = [
     {
-      clinicalAction: "arrow down",
+      clinicalAction: "Up Dose",
       drug: "Warfarin",
       gene: ["CYP2C9", "VKORC1"],
       genotype: ["*1/*1", "TT (rs9923231)"],
       phenotype: ["Normal Metabolizer", ""],
-      toxicity: ["–", "arrow down"],
-      dosage: ["–", "arrow down"],
-      efficacy: ["–", "arrow down"],
+      toxicity: ["–", "Down Dose"],
+      dosage: ["–", "Down Dose"],
+      efficacy: ["–", "Down Dose"],
       evidence: ["FDA", "FDA, DPWG, L1"],
     },
   ];
