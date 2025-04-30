@@ -1,7 +1,6 @@
 import HL7 from "hl7-standard";
 
 export function buildHL7Message(data: any): string {
-  // Construct the MSH segment
   const mshSegment = [
     "MSH",
     "|",
@@ -18,7 +17,6 @@ export function buildHL7Message(data: any): string {
     "2.5",
   ].join("|");
 
-  // Construct the PID segment
   const pidSegment = [
     "PID",
     "1",
@@ -30,7 +28,6 @@ export function buildHL7Message(data: any): string {
     data.sex,
   ].join("|");
 
-  // Construct the OBR segment
   const obrSegment = [
     "OBR",
     "1",
@@ -41,21 +38,125 @@ export function buildHL7Message(data: any): string {
     data.specimen_received,
   ].join("|");
 
-  // Construct the OBX segment
-  const obxSegment = [
-    "OBX",
-    "1",
-    "CE",
-    "CYP2C9^CYP2C9 Genotype",
-    "",
-    data.testResults?.[0].genotype || "",
-    "",
-    "",
-    "",
-    "",
-    "F",
-  ].join("|");
+  const obxSegments = [
+    [
+      "OBX",
+      "1",
+      "FT",
+      "51969-4^Full narrative report^LN",
+      "1",
+      `Result: ${data.resultText}`,
+      "",
+      "",
+      "",
+      "",
+      "F",
+    ],
+    [
+      "OBX",
+      "2",
+      "CWE",
+      "48018-6^Gene studied^LN",
+      "1a",
+      "CLN3^CLN3^HGNC",
+      "",
+      "",
+      "",
+      "",
+      "F",
+    ],
+    [
+      "OBX",
+      "3",
+      "CWE",
+      "83005-9^Variant Category^LN",
+      "2a",
+      "LA26801-3^Simple^LN",
+      "",
+      "",
+      "",
+      "",
+      "F",
+    ],
+    [
+      "OBX",
+      "4",
+      "CWE",
+      "48004-6^DNA change (HGVS)^LN",
+      "2a",
+      "c.1048delC^c.1048delC^HGVS.c",
+      "",
+      "",
+      "",
+      "",
+      "F",
+    ],
+    [
+      "OBX",
+      "5",
+      "CWE",
+      "48005-3^Amino acid change (pHGVS)^LN",
+      "2a",
+      "p.Leu350CysfsX27^p.Leu350CysfsX27^HGVS.p",
+      "",
+      "",
+      "",
+      "",
+      "F",
+    ],
+    [
+      "OBX",
+      "6",
+      "CWE",
+      "48002-0^Genomic Source Class^LN",
+      "2a",
+      "LA18197-6^Unknown Genomic Origin^LN",
+      "",
+      "",
+      "",
+      "",
+      "F",
+    ],
+    [
+      "OBX",
+      "7",
+      "CWE",
+      "53037-8^Genetic variation clinical significance^LN",
+      "2a",
+      "LA6668-3^Pathogenic^LN",
+      "",
+      "",
+      "",
+      "",
+      "F",
+    ],
+    [
+      "OBX",
+      "8",
+      "CWE",
+      "69548-6^Genetic variant assessment^LN",
+      "2a",
+      "LA9633-4^Present^LN",
+      "",
+      "",
+      "",
+      "",
+      "F",
+    ],
+    [
+      "OBX",
+      "9",
+      "ST",
+      "47998-0^Variant display name^LN",
+      "2a",
+      "NM_001042432.2(CLN3):c.1048delC(p.Leu350CysfsX27)",
+      "",
+      "",
+      "",
+      "",
+      "F",
+    ],
+  ].map((fields) => fields.join("|"));
 
-  // Combine all segments into a single HL7 message
-  return [mshSegment, pidSegment, obrSegment, obxSegment].join("\r");
+  return [mshSegment, pidSegment, obrSegment, ...obxSegments].join("\r");
 }

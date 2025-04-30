@@ -404,13 +404,27 @@ async function generatePDF(data: any) {
   // --- TEST RESULT SECTION TABLES
 
   // Definisikan jumlah kolom dan lebar kolom
-  const tableColCount = 8;
+  // Definisikan jumlah kolom dan lebar kolom
+  const tableColCount = 9; // Total kolom termasuk "Evidence"
   const tableTotalWidth = pageWidth - 2 * leftMargin;
-  const colWidth = tableTotalWidth / tableColCount;
+
+  // Lebar kolom
+  const colWidth = (pageWidth - 2 * leftMargin) / 9; // Total width divided by 9 columns
+  const colWidths: Record<string, number> = {
+    clinicalAction: colWidth * 1, // Lebar kolom "Clinical Action"
+    drug: colWidth * 0.8, // Lebar kolom "Drug"
+    gene: colWidth * 1, // Lebar kolom "Gene"
+    genotype: colWidth * 1, // Lebar kolom "Genotype"
+    phenotype: colWidth * 1.2, // Lebar kolom "Phenotype"
+    toxicity: colWidth * 0.8, // Lebar kolom "Toxicity"
+    dosage: colWidth * 0.8, // Lebar kolom "Dosage"
+    efficacy: colWidth * 0.8, // Lebar kolom "Efficacy"
+    evidence: colWidth * 1, // Lebar kolom "Evidence"
+  };
 
   // Atur tinggi header
-  const headerMainHeight = 20; // tinggi baris header utama
-  const headerSubHeight = 20; // tinggi baris header sub
+  const headerMainHeight = 20; // Tinggi baris header utama
+  const headerSubHeight = 20; // Tinggi baris header sub
   const headerTotalHeight = headerMainHeight + headerSubHeight;
 
   // Fungsi bantu untuk menggambar garis horizontal
@@ -425,15 +439,23 @@ async function generatePDF(data: any) {
 
   // Fungsi bantu untuk menggambar garis vertikal
   function drawVerticalLines(yTop: number, yBottom: number) {
-    for (let i = 0; i <= tableColCount; i++) {
-      const xPos = leftMargin + i * colWidth;
+    let currentX = leftMargin;
+    Object.values(colWidths).forEach((width) => {
       page.drawLine({
-        start: { x: xPos, y: yTop },
-        end: { x: xPos, y: yBottom },
+        start: { x: currentX, y: yTop },
+        end: { x: currentX, y: yBottom },
         thickness: 1,
         color: lightBlueColor,
       });
-    }
+      currentX += width;
+    });
+    // Garis terakhir
+    page.drawLine({
+      start: { x: leftMargin + tableTotalWidth, y: yTop },
+      end: { x: leftMargin + tableTotalWidth, y: yBottom },
+      thickness: 1,
+      color: lightBlueColor,
+    });
   }
 
   // Simpan posisi awal tabel header
@@ -451,40 +473,30 @@ async function generatePDF(data: any) {
     color: lightBlueColor,
   });
 
-  yPos -= 20;
-
-  // Tambahkan kolom Phenotype dan sub-kolom untuk Drug Response
+  // Header utama
   const headerFirstRow = [
     "CLINICAL\nACTION",
     "DRUG",
     "GENE",
     "GENOTYPE",
     "PHENOTYPE",
+    "DRUG RESPONSE",
+    "",
     "",
     "",
     "EVIDENCE",
   ];
+  let currentX = leftMargin;
   headerFirstRow.forEach((text, i) => {
     if (text) {
       page.drawText(text, {
-        x: leftMargin + colWidth * i + 5,
+        x: currentX + 5,
         y: currentY - 15,
         size: 7, // Font lebih kecil
         font: fontBold,
       });
     }
-  });
-
-  // Kolom 5-7 (Merged): Drug Response
-  const mergedX = leftMargin + colWidth * 4;
-  const mergedWidth = colWidth * 3;
-  const drText = "DRUG RESPONSE";
-  const drTextWidth = fontBold.widthOfTextAtSize(drText, 7);
-  page.drawText(drText, {
-    x: mergedX + (mergedWidth - drTextWidth) / 2,
-    y: currentY - 15,
-    size: 7, // Font lebih kecil
-    font: fontBold,
+    currentX += Object.values(colWidths)[i];
   });
 
   // Gambar garis horizontal di bawah baris header utama
@@ -504,19 +516,43 @@ async function generatePDF(data: any) {
 
   // Sub-kolom untuk Drug Response
   page.drawText("TOXICITY", {
-    x: leftMargin + colWidth * 4 + 5,
+    x:
+      leftMargin +
+      colWidths.clinicalAction +
+      colWidths.drug +
+      colWidths.gene +
+      colWidths.genotype +
+      colWidths.phenotype +
+      5,
     y: currentY - 10,
     size: 7, // Font lebih kecil
     font: fontBold,
   });
   page.drawText("DOSAGE", {
-    x: leftMargin + colWidth * 5 + 5,
+    x:
+      leftMargin +
+      colWidths.clinicalAction +
+      colWidths.drug +
+      colWidths.gene +
+      colWidths.genotype +
+      colWidths.phenotype +
+      colWidths.toxicity +
+      5,
     y: currentY - 10,
     size: 7, // Font lebih kecil
     font: fontBold,
   });
   page.drawText("EFFICACY", {
-    x: leftMargin + colWidth * 6 + 5,
+    x:
+      leftMargin +
+      colWidths.clinicalAction +
+      colWidths.drug +
+      colWidths.gene +
+      colWidths.genotype +
+      colWidths.phenotype +
+      colWidths.toxicity +
+      colWidths.dosage +
+      5,
     y: currentY - 10,
     size: 7, // Font lebih kecil
     font: fontBold,
@@ -545,14 +581,6 @@ async function generatePDF(data: any) {
       evidence: ["FDA", "FDA, DPWG, L1"],
     },
   ];
-
-  // Updated rendering logic for the table
-  // Load the arrow_down.png image
-  const arrowDownImageUrl = "/arrow_down.png";
-  const arrowDownImageBytes = await fetch(arrowDownImageUrl).then((res) =>
-    res.arrayBuffer()
-  );
-  const arrowDownImage = await pdfDoc.embedPng(arrowDownImageBytes);
 
   // Updated rendering logic for the table
   testResults.forEach((row: any) => {
@@ -595,7 +623,7 @@ async function generatePDF(data: any) {
 
       // Wrap text for each column
       const wrappedLinesPerCol: string[][] = rowValues.map((val) =>
-        wrapText(val, fontRegular, 7, colWidth - 10)
+        wrapText(val, fontRegular, 7, colWidths[val] - 5)
       );
 
       // Calculate the maximum row height
@@ -612,30 +640,21 @@ async function generatePDF(data: any) {
       ensureSpace(maxRowHeight + 5);
 
       // Draw text or image for each column
-      for (let j = 0; j < tableColCount; j++) {
+      let tempX = leftMargin;
+      wrappedLinesPerCol.forEach((lines, j) => {
         let tempY = yPos - 8;
-
-        if (j === 0 && clinicalAction === "↓") {
-          // Draw the arrow_down.png image for the clinicalAction column
-          page.drawImage(arrowDownImage, {
-            x: leftMargin + j * colWidth + 5,
-            y: yPos - maxRowHeight + 5,
-            width: 10,
-            height: 10,
+        lines.forEach((line) => {
+          page.drawText(line, {
+            x: tempX + 5,
+            y: tempY,
+            size: 7, // Font lebih kecil
+            font: fontRegular,
+            color: rgb(0, 0, 0),
           });
-        } else {
-          wrappedLinesPerCol[j].forEach((line) => {
-            page.drawText(line, {
-              x: leftMargin + j * colWidth + 5,
-              y: tempY,
-              size: 7,
-              font: fontRegular,
-              color: rgb(0, 0, 0),
-            });
-            tempY -= 10;
-          });
-        }
-      }
+          tempY -= 10;
+        });
+        tempX += Object.values(colWidths)[j];
+      });
 
       // Update yPos for the next row
       yPos -= maxRowHeight + 5;
@@ -656,7 +675,7 @@ async function generatePDF(data: any) {
   // Tambahkan space setelah tabel test result
   yPos -= 20;
 
-  ensureSpace(40);
+  ensureSpace(20);
   const geneFunctionTitle = "GENE FUNCTION";
 
   // Hitung posisi X agar teks berada di tengah
@@ -688,76 +707,81 @@ async function generatePDF(data: any) {
   yPos -= 30;
 
   // Tampilkan setiap gene function
-  data.geneFunction?.forEach((gene: any) => {
-    ensureSpace(40);
+  // Bagian Gene Function statis
+  ensureSpace(40);
 
-    // Sub-header: Judul Obat
-    const drugTitle = gene.drug || "Drug Name";
-    const drugTitleWidth = fontBold.widthOfTextAtSize(drugTitle, 12);
-    page.drawText(drugTitle, {
-      x: (pageWidth - drugTitleWidth) / 2, // Center align
-      y: yPos,
-      size: 12,
-      font: fontBold,
-      color: rgb(0, 0, 0),
-    });
+  // Sub-header: Judul Obat
+  const drugTitle = "Drug Name";
+  const drugTitleWidth = fontBold.widthOfTextAtSize(drugTitle, 12);
+  page.drawText(drugTitle, {
+    x: leftMargin, // Center align
+    y: yPos,
+    size: 8,
+    font: fontBold,
+    color: rgb(0, 0, 0),
+  });
 
-    // Garis horizontal biru di bawah sub-header
-    yPos -= 10;
-    page.drawLine({
-      start: { x: leftMargin, y: yPos },
-      end: { x: leftMargin + (pageWidth - 2 * leftMargin) * 0.75, y: yPos }, // 3/4 horizontal width
-      thickness: 2,
-      color: blueColor,
-    });
+  // Garis horizontal biru di bawah sub-header
+  yPos -= 5;
+  page.drawLine({
+    start: { x: leftMargin, y: yPos },
+    end: { x: leftMargin + (pageWidth - 2 * leftMargin) * 0.75, y: yPos }, // 3/4 horizontal width
+    thickness: 2,
+    color: blueColor,
+  });
 
-    // Turunkan yPos untuk memberi jarak
-    yPos -= 20;
+  // Turunkan yPos untuk memberi jarak
+  yPos -= 20;
 
-    // Paragraf detail
-    const detailsText = gene.details || "Gene function details go here...";
-    const wrappedGeneDetails = wrapText(
-      detailsText,
-      fontRegular,
-      8,
-      (pageWidth - 2 * leftMargin) * 0.6 // 60% width for the paragraph
-    );
+  // Paragraf detail
+  const detailsText =
+    "TLorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.";
+  const wrappedGeneDetails = wrapText(
+    detailsText,
+    fontRegular,
+    8,
+    (pageWidth - 2 * leftMargin) * 0.6 // 60% width for the paragraph
+  );
 
-    // Mapping text (Normal Metabolizer dan Gene 1/1)
-    const mappingText = ["Normal Metabolizer", gene.genotype || "Gene 1/1"];
+  // Mapping text (Normal Metabolizer dan Gene 1/1)
+  const mappingText = ["Normal Metabolizer", "Gene 1/1"];
 
-    // Render paragraf dan mapping text secara berdampingan
-    const paragraphX = leftMargin;
-    const mappingX = leftMargin + (pageWidth - 2 * leftMargin) * 0.65; // 65% width for mapping text
-    wrappedGeneDetails.forEach((line, index) => {
-      ensureSpace(10);
+  // Render paragraf dan mapping text secara berdampingan
+  const paragraphX = leftMargin;
+  const mappingX = leftMargin + (pageWidth - 2 * leftMargin) * 0.65; // 65% width for mapping text
+  const maxLines = Math.max(wrappedGeneDetails.length, mappingText.length); // Pastikan semua elemen dirender
 
-      // Render paragraf
-      page.drawText(line, {
+  for (let index = 0; index < maxLines; index++) {
+    ensureSpace(10);
+
+    // Render paragraf
+    if (index < wrappedGeneDetails.length) {
+      page.drawText(wrappedGeneDetails[index], {
         x: paragraphX,
         y: yPos,
         size: 8,
         font: fontRegular,
         color: rgb(0, 0, 0),
       });
+    }
 
-      // Render mapping text di samping paragraf
-      if (index < mappingText.length) {
-        page.drawText(mappingText[index], {
-          x: mappingX,
-          y: yPos,
-          size: 8,
-          font: fontBold,
-          color: rgb(0, 0, 0),
-        });
-      }
+    // Render mapping text (right-aligned)
+    if (index < mappingText.length) {
+      const textWidth = fontBold.widthOfTextAtSize(mappingText[index], 8);
+      page.drawText(mappingText[index], {
+        x: mappingX + ((pageWidth - 2 * leftMargin) * 0.35 - textWidth), // Adjust for right alignment
+        y: yPos,
+        size: 8,
+        font: fontBold,
+        color: rgb(0, 0, 0),
+      });
+    }
 
-      yPos -= 10;
-    });
+    yPos -= 10;
+  }
 
-    // Tambahkan jarak setelah setiap gene function
-    yPos -= 20;
-  });
+  // Tambahkan jarak setelah setiap gene function
+  yPos -= 20;
 
   // Hapus placeholder text karena tidak diperlukan
 
