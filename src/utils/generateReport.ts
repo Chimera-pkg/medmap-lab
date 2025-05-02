@@ -49,17 +49,17 @@ async function generatePDF(data: any) {
     fontSize: number,
     maxWidth: number
   ): string[] {
-    const words = text.split(" ");
+    const words = text.split("");
     let lines: string[] = [];
     let currentLine = "";
 
     words.forEach((word) => {
-      const testLine = currentLine + word + " ";
+      const testLine = currentLine + word + "";
       const testLineWidth = font.widthOfTextAtSize(testLine, fontSize);
       if (testLineWidth > maxWidth) {
         // pindah baris
         lines.push(currentLine.trim());
-        currentLine = word + " ";
+        currentLine = word + "";
       } else {
         currentLine = testLine;
       }
@@ -181,6 +181,82 @@ async function generatePDF(data: any) {
     color: rgb(0, 0, 0),
   });
   yPos -= 20;
+
+  // === 5 KOLOM: PATIENT, SPECIMEN, ORDERED BY, CASE, PHYSICIAN ===
+  const columnTitles = ["PATIENT", "SPECIMEN", "ORDERED BY", "CASE"];
+  const columnWidth = (pageWidth - leftMargin * 2) / columnTitles.length;
+  const colTitleFontSize = 10;
+
+  // Header kolom
+  columnTitles.forEach((title, i) => {
+    const xPos = leftMargin + i * columnWidth;
+    page.drawText(title, {
+      x: xPos,
+      y: yPos,
+      size: colTitleFontSize,
+      font: fontBold,
+      color: rgb(0, 0, 0),
+    });
+  });
+
+  // Garis underline biru untuk masing-masing kolom
+  yPos -= 5;
+  columnTitles.forEach((_, i) => {
+    const xPos = leftMargin + i * columnWidth;
+    page.drawLine({
+      start: { x: xPos, y: yPos },
+      end: { x: xPos + columnWidth - 5, y: yPos },
+      thickness: 1,
+      color: blueColor,
+    });
+  });
+  yPos -= 15;
+
+  // Data untuk 5 kolom
+  const columnData = [
+    data.patient || {},
+    data.specimen || {},
+    data.orderedBy || {},
+    data.caseInfo || {},
+  ];
+
+  let maxColumnHeight = yPos;
+  columnData.forEach((colObj, i) => {
+    let tempY = yPos;
+    const xPos = leftMargin + i * columnWidth;
+
+    Object.keys(colObj).forEach((key) => {
+      // Draw the key (e.g., "Patient Name:")
+      const keyText = `${key}:`;
+      page.drawText(keyText, {
+        x: xPos,
+        y: tempY,
+        size: 8,
+        font: fontBold,
+        color: rgb(0, 0, 0),
+      });
+
+      // Move to the next line for the value
+      tempY -= 12;
+
+      // Draw the value (e.g., "John Doe")
+      const valueText = `${colObj[key]}`;
+      page.drawText(valueText, {
+        x: xPos,
+        y: tempY,
+        size: 8,
+        font: fontRegular,
+        color: rgb(0, 0, 0),
+      });
+
+      // Move to the next line for the next key-value pair
+      tempY -= 12;
+    });
+    if (tempY < maxColumnHeight) {
+      maxColumnHeight = tempY;
+    }
+  });
+  yPos = maxColumnHeight - 20;
 
   // === TEST INFORMATION (judul dan garis biru) ===
   ensureSpace(30);
