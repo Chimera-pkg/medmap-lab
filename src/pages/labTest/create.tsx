@@ -7,6 +7,7 @@ import { generateReportBlob } from "../../utils/generateReport";
 import { API_URL } from "../../config";
 import { useNavigate } from "react-router-dom";
 import { buildHL7Message } from "../../utils/generateHl7";
+import Papa from "papaparse";
 
 export const PostCreate: React.FC = () => {
     // Misalnya untuk redirect setelah sukses
@@ -16,7 +17,37 @@ export const PostCreate: React.FC = () => {
 
     // Fungsi ketika form submit (akan dijalankan secara penuh, tidak hanya save record)
     const handleFinish = async (values: any) => {
-        const { date_of_birth, specimen_received } = values;
+        const { date_of_birth, specimen_received, upload_csv_file } = values;
+
+        const csvFile = upload_csv_file?.[0]?.originFileObj;
+    if (!csvFile) {
+        notification.error({
+            message: "Error",
+            description: "Please upload a valid CSV file.",
+        });
+        return;
+    }
+
+    const csvData: any[] = await new Promise((resolve, reject) => {
+        Papa.parse(csvFile, {
+            header: true,
+            complete: (result) => resolve(result.data),
+            error: (error) => reject(error),
+        });
+    });
+
+    // Map the CSV data to the required format
+    const testResults = csvData.map((row) => ({
+        clinicalAction: row.Clinical_Annotation || "",
+        drug: row.Drug_Name || "",
+        gene: row.Gene_Name || "",
+        genotype: row.GenoType || "",
+        phenotype: row.PhenoType || "",
+        toxicity: row.Drug_Response_Toxicity || "",
+        dosage: row.Drug_Response_Dosage || "",
+        efficacy: row.Drug_Response_Efficancy || "",
+        evidence: row.Evidence || "",
+    }));
 
         // Format data untuk report
         const reportData = {
