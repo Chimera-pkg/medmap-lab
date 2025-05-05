@@ -38,15 +38,15 @@ export const PostCreate: React.FC = () => {
 
     // Map the CSV data to the required format
     const testResults = csvData.map((row) => ({
-        clinicalAction: row.Clinical_Annotation || "",
+        clinicalAction:  "Up dose",
         drug: row.Drug_Name || "",
-        gene: row.Gene_Name || "",
-        genotype: row.GenoType || "",
-        phenotype: row.PhenoType || "",
-        toxicity: row.Drug_Response_Toxicity || "",
-        dosage: row.Drug_Response_Dosage || "",
-        efficacy: row.Drug_Response_Efficancy || "",
-        evidence: row.Evidence || "",
+        gene: row.Gene_Name ? row.Gene_Name.split(",") : [],
+        genotype: row.GenoType ? row.GenoType.split(",") : [],
+        phenotype: row.PhenoType ? row.PhenoType.split(",") : [],
+        toxicity: row.Drug_Response_Toxicity ? row.Drug_Response_Toxicity.split(",") : [],
+        dosage: row.Drug_Response_Dosage ? row.Drug_Response_Dosage.split(",") : [],
+        efficacy: row.Drug_Response_Efficacy ? row.Drug_Response_Efficacy.split(",") : [],
+        evidence: row.Evidence ? row.Evidence.split(",") : [],
     }));
 
         // Format data untuk report
@@ -76,19 +76,7 @@ export const PostCreate: React.FC = () => {
             },
             test_information: values.test_information, // Pastikan ini ada
             lab_result_summary: values.lab_result_summary,
-            testResults: [
-                {
-                    drug: "Warfarin",
-                    gene: "CYP2C9",
-                    genotype: "*1/*1",
-                    phenotype: "Normal Metabolizer",
-                    toxicity: "–",
-                    dosage: "–",
-                    efficacy: "–",
-                },
-            ],
-            // footerText:
-            //     "The lab-developed pharmacogenomic assay tests for ABCG2, CYP2C19, CYP2C9, CYP2D6, CYP3A5, CYP4F2, DPYD, HLA-A, HLA-B, NUDT15, SLCO1B1, TPMT, UGT1A1, and VKORC1 gene variants by Taqman SNP Genotyping Assays on Quantstudio 6 Flex Real-time PCR system from Thermo Fisher Scientific.",
+            testResults,
         };
 
         try {

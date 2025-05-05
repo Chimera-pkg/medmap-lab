@@ -586,19 +586,7 @@ async function generatePDF(data: any) {
   yPos = currentY - headerSubHeight - 2;
 
   // ------- BAGIAN BODY (Isi Tabel Test Result) -------
-  const testResults = [
-    {
-      clinicalAction: "Up Dose",
-      drug: "Warfarin",
-      gene: ["CYP2C9", "VKORC1"],
-      genotype: ["*1/*1", "TT (rs9923231)"],
-      phenotype: ["Normal Metabolizer", ""],
-      toxicity: ["–", "Down Dose"],
-      dosage: ["–", "Down Dose"],
-      efficacy: ["–", "Down Dose"],
-      evidence: ["FDA", "FDA, DPWG, L1"],
-    },
-  ];
+  const testResults = data.testResults || [];
 
   // Updated rendering logic for the table
   testResults.forEach((row: any) => {
@@ -617,7 +605,7 @@ async function generatePDF(data: any) {
 
     for (let i = 0; i < maxRows; i++) {
       // Extract values for the current row
-      const clinicalAction = i === 0 ? row.clinicalAction || "" : "";
+      const clinicalAction = "";
       const drug = i === 0 ? row.drug || "" : "";
       const gene = row.gene[i] || "";
       const genotype = row.genotype[i] || "";
@@ -625,7 +613,7 @@ async function generatePDF(data: any) {
       const toxicity = row.toxicity[i] || "";
       const dosage = row.dosage[i] || "";
       const efficacy = row.efficacy[i] || "";
-      const evidence = row.evidence[i] || "";
+      const evidence = i === 0 ? row.evidence?.join(", ") || "" : ""; // Gabungkan evidence
 
       const rowValues = [
         clinicalAction,
