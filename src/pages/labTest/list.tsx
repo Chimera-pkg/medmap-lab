@@ -3,6 +3,7 @@ import { Table, Space, Checkbox, Button, Modal, message } from "antd";
 import moment from "moment";
 import { API_URL } from "../../config";
 import { DeleteOutlined, FilePdfOutlined, FileTextOutlined, EyeOutlined } from "@ant-design/icons";
+import React, { useState } from "react";
 
 interface ILabTest {
   id: number;
@@ -23,6 +24,8 @@ export const PostList = () => {
   const { tableProps, tableQueryResult } = useTable<ILabTest>({
     resource: "lab-tests",
   });
+
+  const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([]);
 
   const handleDelete = (record: ILabTest) => {
     Modal.confirm({
@@ -54,6 +57,41 @@ export const PostList = () => {
         } catch (error) {
           console.error("Error deleting record:", error);
           message.error("Failed to delete record");
+        }
+      },
+    });
+  };
+
+  const handleDeleteSelected = () => {
+    Modal.confirm({
+      title: "Are you sure you want to delete the selected records?",
+      content: `This action will delete ${selectedRowKeys.length} record(s).`,
+      okText: "Yes, Delete",
+      cancelText: "Cancel",
+      onOk: async () => {
+        try {
+          const token = localStorage.getItem("authToken");
+          await Promise.all(
+            selectedRowKeys.map((id) =>
+              fetch(`${API_URL}/lab-tests/${id}`, {
+                method: "DELETE",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  deleted_at: new Date().toISOString(),
+                }),
+              })
+            )
+          );
+
+          message.success("Selected records deleted successfully");
+          setSelectedRowKeys([]); // Clear selection
+          tableQueryResult.refetch(); // Refresh the table
+        } catch (error) {
+          console.error("Error deleting records:", error);
+          message.error("Failed to delete selected records");
         }
       },
     });
@@ -97,15 +135,32 @@ export const PostList = () => {
     const viewerUrl = `/file-viewer?url=${encodeURIComponent(fileUrl)}&type=${fileType}&token=${token}`;
     window.open(viewerUrl, '_blank');
   };
+  
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (selectedKeys: React.Key[]) => {
+      setSelectedRowKeys(selectedKeys as number[]);
+    },
+  };
 
   return (
     <List>
-      <Table {...tableProps} rowKey="id">
-        <Table.Column
-          dataIndex="id"
-          title="Select"
-          render={() => <Checkbox />}
-        />
+      <Space style={{ marginBottom: 16 }}>
+        <Button
+          type="primary"
+          danger
+          icon={<DeleteOutlined />}
+          onClick={handleDeleteSelected}
+          disabled={selectedRowKeys.length === 0}
+        >
+          Delete Selected
+        </Button>
+      </Space>
+      <Table
+        {...tableProps}
+        rowKey="id"
+        rowSelection={rowSelection} // Add row selection
+      >
         <Table.Column dataIndex="patient_name" title="PATIENT NAME" />
         <Table.Column dataIndex="test_case_id" title="TEST CASE ID" />
         <Table.Column dataIndex="physician_name" title="PHYSICIAN NAME" />
