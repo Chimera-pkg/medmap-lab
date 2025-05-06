@@ -130,12 +130,12 @@ export const PostList = () => {
     });
   };
   
-  const openFileViewer = (fileUrl: string, fileType: string) => {
-    const token = localStorage.getItem("authToken");
-    const viewerUrl = `/file-viewer?url=${encodeURIComponent(fileUrl)}&type=${fileType}&token=${token}`;
-    window.open(viewerUrl, '_blank');
-  };
-  
+  // const openFileViewer = (fileUrl: string, fileType: string) => {
+  //   const token = localStorage.getItem("authToken");
+  //   const viewerUrl = `/file-viewer?url=${encodeURIComponent(fileUrl)}&type=${fileType}&token=${token}`;
+  //   window.open(viewerUrl, '_blank');
+  // };
+
   const rowSelection = {
     selectedRowKeys,
     onChange: (selectedKeys: React.Key[]) => {

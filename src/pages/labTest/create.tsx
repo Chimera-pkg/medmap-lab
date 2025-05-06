@@ -36,6 +36,8 @@ export const PostCreate: React.FC = () => {
         });
     });
 
+    
+
     // Map the CSV data to the required format
     const testResults = csvData.map((row) => ({
         clinicalAction:  "Up dose",
@@ -48,6 +50,25 @@ export const PostCreate: React.FC = () => {
         efficacy: row.Drug_Response_Efficacy ? row.Drug_Response_Efficacy.split(",") : [],
         evidence: row.Evidence ? row.Evidence.split(",") : [],
     }));
+
+    // Hilangkan duplikasi dalam testResults berdasarkan kombinasi kolom
+const uniqueTestResults = testResults.filter((row, index, self) => {
+    return (
+      index ===
+      self.findIndex(
+        (r) =>
+          r.clinicalAction === row.clinicalAction &&
+          r.drug === row.drug &&
+          JSON.stringify(r.gene) === JSON.stringify(row.gene) &&
+          JSON.stringify(r.genotype) === JSON.stringify(row.genotype) &&
+          JSON.stringify(r.phenotype) === JSON.stringify(row.phenotype) &&
+          JSON.stringify(r.toxicity) === JSON.stringify(row.toxicity) &&
+          JSON.stringify(r.dosage) === JSON.stringify(row.dosage) &&
+          JSON.stringify(r.efficacy) === JSON.stringify(row.efficacy) &&
+          JSON.stringify(r.evidence) === JSON.stringify(row.evidence)
+      )
+    );
+  });
 
         // Format data untuk report
         const reportData = {
@@ -90,21 +111,23 @@ export const PostCreate: React.FC = () => {
                 date_of_birth: date_of_birth ? dayjs(date_of_birth).format("YYYY-MM-DD") : null,
                 specimen_received: specimen_received ? dayjs(specimen_received).format("YYYY-MM-DD") : null,
                 testResults: [
-                    {
-                        genotype: "Example Genotype", // Replace with actual genotype data if available
-                    },
-                ],
+                ],  
             });
 
                     // Create HL7 blob
             const hl7Blob = new Blob([hl7Message], { type: "text/plain" });
             console.log("Generated HL7 Blob:", hl7Blob);
 
+            // Tentukan nama file berdasarkan patient_name
+            const patientName = values.patient_name.replace(/\s+/g, "_"); // Ganti spasi dengan underscore
+            const pdfFileName = `${patientName}_Report.pdf`;
+            const hl7FileName = `${patientName}_Report.hl7`;
 
-                    // Create FormData object and append files and individual fields
+
+            // Create FormData object and append files and individual fields
             const formData = new FormData();
-            formData.append("report_download_pdf", pdfBlob, "report.pdf");
-            formData.append("report_download_hl7", hl7Blob, "report.hl7");
+            formData.append("report_download_pdf", pdfBlob, pdfFileName);
+            formData.append("report_download_hl7", hl7Blob, hl7FileName);
 
 
             // Append setiap field secara individual agar validator backend dapat membaca

@@ -586,96 +586,79 @@ async function generatePDF(data: any) {
   yPos = currentY - headerSubHeight - 2;
 
   // ------- BAGIAN BODY (Isi Tabel Test Result) -------
-  const testResults = data.testResults || [];
+  const uniqueTestResults = data.testResults || [];
 
-  // Updated rendering logic for the table
-  testResults.forEach((row: any) => {
+  uniqueTestResults.forEach((row: any) => {
     const rowTopY = yPos;
 
-    // Determine the maximum number of rows needed for this entry
-    const maxRows = Math.max(
-      row.gene.length,
-      row.genotype.length,
-      row.phenotype.length,
-      row.toxicity.length,
-      row.dosage.length,
-      row.efficacy.length,
-      row.evidence.length
+    // Ambil nilai untuk setiap kolom, pastikan tipe data sesuai
+    const rowValues = [
+      row.clinicalAction || "",
+      row.drug || "",
+      Array.isArray(row.gene) ? row.gene.join(", ") : row.gene || "",
+      Array.isArray(row.genotype)
+        ? row.genotype.join(", ")
+        : row.genotype || "",
+      Array.isArray(row.phenotype)
+        ? row.phenotype.join(", ")
+        : row.phenotype || "",
+      Array.isArray(row.toxicity)
+        ? row.toxicity.join(", ")
+        : row.toxicity || "",
+      Array.isArray(row.dosage) ? row.dosage.join(", ") : row.dosage || "",
+      Array.isArray(row.efficacy)
+        ? row.efficacy.join(", ")
+        : row.efficacy || "",
+      Array.isArray(row.evidence)
+        ? row.evidence.join(", ")
+        : row.evidence || "",
+    ];
+
+    // Bungkus teks untuk setiap kolom
+    const wrappedLinesPerCol: string[][] = rowValues.map((val, index) =>
+      wrapText(
+        String(val || ""),
+        fontRegular,
+        7,
+        Object.values(colWidths)[index] - 5
+      )
     );
 
-    for (let i = 0; i < maxRows; i++) {
-      // Extract values for the current row
-      const clinicalAction = "";
-      const drug = i === 0 ? row.drug || "" : "";
-      const gene = row.gene[i] || "";
-      const genotype = row.genotype[i] || "";
-      const phenotype = row.phenotype[i] || "";
-      const toxicity = row.toxicity[i] || "";
-      const dosage = row.dosage[i] || "";
-      const efficacy = row.efficacy[i] || "";
-      const evidence = i === 0 ? row.evidence?.join(", ") || "" : ""; // Gabungkan evidence
+    // Hitung tinggi maksimum baris
+    const maxRowHeight = Math.max(
+      ...wrappedLinesPerCol.map((lines) => lines.length * 10),
+      20 // Tinggi minimum baris
+    );
 
-      const rowValues = [
-        clinicalAction,
-        drug,
-        gene,
-        genotype,
-        phenotype,
-        toxicity,
-        dosage,
-        efficacy,
-        evidence,
-      ];
+    // Pastikan ada cukup ruang untuk baris
+    ensureSpace(maxRowHeight + 5);
 
-      // Wrap text for each column
-      const wrappedLinesPerCol: string[][] = rowValues.map((val) =>
-        wrapText(val, fontRegular, 7, colWidths[val] - 5)
-      );
-
-      // Calculate the maximum row height
-      let maxRowHeight = 0;
-      wrappedLinesPerCol.forEach((lines) => {
-        const colHeight = lines.length * 10;
-        if (colHeight > maxRowHeight) maxRowHeight = colHeight;
-      });
-
-      // Ensure minimum row height
-      if (maxRowHeight < 20) maxRowHeight = 20;
-
-      // Ensure there is enough space for the row
-      ensureSpace(maxRowHeight + 5);
-
-      // Draw text or image for each column
-      let tempX = leftMargin;
-      wrappedLinesPerCol.forEach((lines, j) => {
-        let tempY = yPos - 8;
-        lines.forEach((line) => {
-          page.drawText(line, {
-            x: tempX + 5,
-            y: tempY,
-            size: 7, // Font lebih kecil
-            font: fontRegular,
-            color: rgb(0, 0, 0),
-          });
-          tempY -= 10;
+    // Gambar teks untuk setiap kolom
+    let tempX = leftMargin;
+    wrappedLinesPerCol.forEach((lines, j) => {
+      let tempY = yPos - 8;
+      lines.forEach((line) => {
+        page.drawText(line, {
+          x: tempX + 5,
+          y: tempY,
+          size: 7,
+          font: fontRegular,
+          color: rgb(0, 0, 0),
         });
-        tempX += Object.values(colWidths)[j];
+        tempY -= 10;
       });
+      tempX += Object.values(colWidths)[j];
+    });
 
-      // Update yPos for the next row
-      yPos -= maxRowHeight + 5;
+    // Perbarui yPos untuk baris berikutnya
+    yPos -= maxRowHeight + 5;
 
-      // Draw a horizontal line below the row
-      drawHorizontalLine(yPos);
-    }
+    // Gambar garis horizontal di bawah baris
+    drawHorizontalLine(yPos);
 
-    // Draw vertical lines for the row
+    // Gambar garis vertikal untuk baris
     drawVerticalLines(rowTopY, yPos);
   });
-
-  // Tambahkan space setelah tabel test result
-  yPos -= 20;
-
   // TEST RESULT END
 
   // Tambahkan space setelah tabel test result
@@ -717,7 +700,7 @@ async function generatePDF(data: any) {
   ensureSpace(40);
 
   // Sub-header: Judul Obat
-  const drugTitle = data.Gene_Name || "Drug Name";
+  const drugTitle = data.gene || "Drug Name";
   const drugTitleWidth = fontBold.widthOfTextAtSize(drugTitle, 12);
   page.drawText(drugTitle, {
     x: leftMargin, // Center align
@@ -741,7 +724,7 @@ async function generatePDF(data: any) {
 
   // Paragraf detail
   const detailsText =
-    data.Clinical_Annotation ||
+    data.clinicalAction ||
     "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.";
   const wrappedGeneDetails = wrapText(
     detailsText,
