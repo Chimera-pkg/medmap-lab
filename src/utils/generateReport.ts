@@ -699,83 +699,52 @@ async function generatePDF(data: any) {
   // Bagian Gene Function statis
   ensureSpace(40);
 
-  // Sub-header: Judul Obat
-  const drugTitle = data.gene || "Drug Name";
-  const drugTitleWidth = fontBold.widthOfTextAtSize(drugTitle, 12);
-  page.drawText(drugTitle, {
-    x: leftMargin, // Center align
-    y: yPos,
-    size: 8,
-    font: fontBold,
-    color: rgb(0, 0, 0),
-  });
+  // Render Gene Function dynamically based on rows in testResults
+  data.testResults.forEach((row: any) => {
+    // Sub-header: Gene Name
+    const geneSubHeader = Array.isArray(row.gene)
+      ? row.gene.join(", ")
+      : row.gene || "No Gene Name provided";
 
-  // Garis horizontal biru di bawah sub-header
-  yPos -= 5;
-  page.drawLine({
-    start: { x: leftMargin, y: yPos },
-    end: { x: leftMargin + (pageWidth - 2 * leftMargin) * 0.75, y: yPos }, // 3/4 horizontal width
-    thickness: 2,
-    color: blueColor,
-  });
+    // Render sub-header
+    ensureSpace(20);
+    page.drawText(geneSubHeader, {
+      x: leftMargin,
+      y: yPos,
+      size: 10,
+      font: fontBold,
+      color: rgb(0, 0, 0),
+    });
 
-  // Turunkan yPos untuk memberi jarak
-  yPos -= 20;
+    // Update yPos for the paragraph
+    yPos -= 15;
 
-  // Paragraf detail
-  const detailsText =
-    data.clinicalAction ||
-    "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.";
-  const wrappedGeneDetails = wrapText(
-    detailsText,
-    fontRegular,
-    8,
-    (pageWidth - 2 * leftMargin) * 0.6 // 60% width for the paragraph
-  );
+    // Paragraph: Clinical Annotation
+    const clinicalAnnotation =
+      row.clinicalannotation || "No Clinical Annotation provided.";
+    const wrappedAnnotation = wrapText(
+      clinicalAnnotation,
+      fontRegular,
+      8,
+      pageWidth - 2 * leftMargin
+    );
 
-  // Mapping text (Normal Metabolizer dan Gene 1/1)
-  const mappingText = ["Normal Metabolizer", "Gene 1/1"];
-
-  // Render paragraf dan mapping text secara berdampingan
-  const paragraphX = leftMargin;
-  const mappingX = leftMargin + (pageWidth - 2 * leftMargin) * 0.65; // 65% width for mapping text
-  const maxLines = Math.max(wrappedGeneDetails.length, mappingText.length); // Pastikan semua elemen dirender
-
-  for (let index = 0; index < maxLines; index++) {
-    ensureSpace(10);
-
-    // Render paragraf
-    if (index < wrappedGeneDetails.length) {
-      page.drawText(wrappedGeneDetails[index], {
-        x: paragraphX,
+    // Render paragraph
+    wrappedAnnotation.forEach((line) => {
+      ensureSpace(12);
+      page.drawText(line, {
+        x: leftMargin,
         y: yPos,
         size: 8,
         font: fontRegular,
         color: rgb(0, 0, 0),
       });
-    }
+      yPos -= 12;
+    });
 
-    // Render mapping text (right-aligned)
-    if (index < mappingText.length) {
-      const textWidth = fontBold.widthOfTextAtSize(mappingText[index], 8);
-      page.drawText(mappingText[index], {
-        x: mappingX + ((pageWidth - 2 * leftMargin) * 0.35 - textWidth), // Adjust for right alignment
-        y: yPos,
-        size: 8,
-        font: fontBold,
-        color: rgb(0, 0, 0),
-      });
-    }
-
-    yPos -= 10;
-  }
-
-  // Tambahkan jarak setelah setiap gene function
-  yPos -= 20;
-
-  // Hapus placeholder text karena tidak diperlukan
-
-  // END GENE FUNCTION
+    // Add spacing after each gene function
+    yPos -= 20;
+  });
 
   // Simpan PDF dan kembalikan Blob
   const pdfBytes = await pdfDoc.save();
