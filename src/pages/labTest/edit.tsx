@@ -158,7 +158,7 @@ export const PostEdit: React.FC = () => {
               getValueFromEvent={(e) =>
                 Array.isArray(e) ? e : e?.fileList
               }
-            > */}
+            >
               <Upload
                 name="file"
                 action="/upload.do"
@@ -166,7 +166,7 @@ export const PostEdit: React.FC = () => {
               >
                 <Button icon={<UploadOutlined />}>Upload CSV</Button>
               </Upload>
-            </Form.Item>
+            </Form.Item> */}
           </Col>
         </Row>
       </Form>
