@@ -1,5 +1,3 @@
-import HL7 from "hl7-standard";
-
 export function buildHL7Message(data: any): string {
   const mshSegment = [
     "MSH",
@@ -38,125 +36,29 @@ export function buildHL7Message(data: any): string {
     data.specimen_received,
   ].join("|");
 
-  const obxSegments = [
-    [
+  // Generate OBX segments for test results
+  const obxSegments = data.testResults.map((result: any, index: number) => {
+    return [
       "OBX",
-      "1",
-      "FT",
-      "51969-4^Full narrative report^LN",
-      "1",
-      `Result: ${data.resultText}`,
-      "",
-      "",
-      "",
-      "",
-      "F",
-    ],
-    [
-      "OBX",
-      "2",
+      index + 1,
       "CWE",
-      "48018-6^Gene studied^LN",
-      "1a",
-      "CLN3^CLN3^HGNC",
-      "",
-      "",
-      "",
-      "",
+      `Drug: ${result.drug}`,
+      `Gene: ${
+        Array.isArray(result.gene) ? result.gene.join(", ") : result.gene
+      }`,
+      `Genotype: ${
+        Array.isArray(result.genotype)
+          ? result.genotype.join(", ")
+          : result.genotype
+      }`,
+      `Phenotype: ${result.phenotype || "N/A"}`,
+      `Toxicity: ${result.toxicity || "N/A"}`,
+      `Dosage: ${result.dosage || "N/A"}`,
+      `Efficacy: ${result.efficacy || "N/A"}`,
+      `Evidence: ${result.evidence || "N/A"}`,
       "F",
-    ],
-    [
-      "OBX",
-      "3",
-      "CWE",
-      "83005-9^Variant Category^LN",
-      "2a",
-      "LA26801-3^Simple^LN",
-      "",
-      "",
-      "",
-      "",
-      "F",
-    ],
-    [
-      "OBX",
-      "4",
-      "CWE",
-      "48004-6^DNA change (HGVS)^LN",
-      "2a",
-      "c.1048delC^c.1048delC^HGVS.c",
-      "",
-      "",
-      "",
-      "",
-      "F",
-    ],
-    [
-      "OBX",
-      "5",
-      "CWE",
-      "48005-3^Amino acid change (pHGVS)^LN",
-      "2a",
-      "p.Leu350CysfsX27^p.Leu350CysfsX27^HGVS.p",
-      "",
-      "",
-      "",
-      "",
-      "F",
-    ],
-    [
-      "OBX",
-      "6",
-      "CWE",
-      "48002-0^Genomic Source Class^LN",
-      "2a",
-      "LA18197-6^Unknown Genomic Origin^LN",
-      "",
-      "",
-      "",
-      "",
-      "F",
-    ],
-    [
-      "OBX",
-      "7",
-      "CWE",
-      "53037-8^Genetic variation clinical significance^LN",
-      "2a",
-      "LA6668-3^Pathogenic^LN",
-      "",
-      "",
-      "",
-      "",
-      "F",
-    ],
-    [
-      "OBX",
-      "8",
-      "CWE",
-      "69548-6^Genetic variant assessment^LN",
-      "2a",
-      "LA9633-4^Present^LN",
-      "",
-      "",
-      "",
-      "",
-      "F",
-    ],
-    [
-      "OBX",
-      "9",
-      "ST",
-      "47998-0^Variant display name^LN",
-      "2a",
-      "NM_001042432.2(CLN3):c.1048delC(p.Leu350CysfsX27)",
-      "",
-      "",
-      "",
-      "",
-      "F",
-    ],
-  ].map((fields) => fields.join("|"));
+    ].join("|");
+  });
 
   return [mshSegment, pidSegment, obrSegment, ...obxSegments].join("\r");
 }
