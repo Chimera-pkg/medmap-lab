@@ -1,4 +1,6 @@
 export function buildHL7Message(data: any): string {
+  console.log("Data received in buildHL7Message:", data);
+
   const mshSegment = [
     "MSH",
     "|",
@@ -36,7 +38,8 @@ export function buildHL7Message(data: any): string {
     data.specimen_received,
   ].join("|");
 
-  // Generate OBX segments for test results
+  console.log("Test Results:", data.testResults);
+
   const obxSegments = data.testResults.map((result: any, index: number) => {
     return [
       "OBX",
@@ -59,6 +62,8 @@ export function buildHL7Message(data: any): string {
       "F",
     ].join("|");
   });
+
+  console.log("Generated OBX Segments:", obxSegments);
 
   return [mshSegment, pidSegment, obrSegment, ...obxSegments].join("\r");
 }
