@@ -494,7 +494,7 @@ async function generatePDF(data: any) {
 
   // Header utama
   const headerFirstRow = [
-    "CLINICAL\nACTION",
+    // "CLINICAL\nACTION",
     "DRUG",
     "GENE",
     "GENOTYPE",

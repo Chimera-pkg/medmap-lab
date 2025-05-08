@@ -40,7 +40,7 @@ export const PostCreate: React.FC = () => {
 
     // Map the CSV data to the required format
     const testResults = csvData.map((row) => ({
-        clinicalAction:  "Up dose",
+        // clinicalAction:  "Up dose",
         clinicalannotation: row.Clinical_Annotation || "No Clinical Annotation provided",
         drug: row.Drug_Name || "",
         gene: row.Gene_Name ? row.Gene_Name.split(",") : [],
@@ -58,7 +58,7 @@ const uniqueTestResults = testResults.filter((row, index, self) => {
       index ===
       self.findIndex(
         (r) =>
-          r.clinicalAction === row.clinicalAction &&
+        //   r.clinicalAction === row.clinicalAction &&
           r.drug === row.drug &&
           JSON.stringify(r.gene) === JSON.stringify(row.gene) &&
           JSON.stringify(r.genotype) === JSON.stringify(row.genotype) &&
