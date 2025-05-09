@@ -428,9 +428,9 @@ async function generatePDF(data: any) {
   const tableTotalWidth = pageWidth - 2 * leftMargin;
 
   // Lebar kolom
-  const colWidth = (pageWidth - 2 * leftMargin) / 9; // Total width divided by 9 columns
+  const colWidth = (pageWidth - 2 * leftMargin) / 8; // Total width divided by 9 columns
   const colWidths: Record<string, number> = {
-    clinicalAction: colWidth * 1, // Lebar kolom "Clinical Action"
+    // clinicalAction: colWidth * 1, // Lebar kolom "Clinical Action"
     drug: colWidth * 0.8, // Lebar kolom "Drug"
     gene: colWidth * 1, // Lebar kolom "Gene"
     genotype: colWidth * 1, // Lebar kolom "Genotype"
@@ -536,7 +536,7 @@ async function generatePDF(data: any) {
   page.drawText("TOXICITY", {
     x:
       leftMargin +
-      colWidths.clinicalAction +
+      // colWidths.clinicalAction +
       colWidths.drug +
       colWidths.gene +
       colWidths.genotype +
@@ -549,7 +549,7 @@ async function generatePDF(data: any) {
   page.drawText("DOSAGE", {
     x:
       leftMargin +
-      colWidths.clinicalAction +
+      // colWidths.clinicalAction +
       colWidths.drug +
       colWidths.gene +
       colWidths.genotype +
@@ -563,7 +563,7 @@ async function generatePDF(data: any) {
   page.drawText("EFFICACY", {
     x:
       leftMargin +
-      colWidths.clinicalAction +
+      // colWidths.clinicalAction +
       colWidths.drug +
       colWidths.gene +
       colWidths.genotype +
@@ -593,7 +593,7 @@ async function generatePDF(data: any) {
 
     // Ambil nilai untuk setiap kolom, pastikan tipe data sesuai
     const rowValues = [
-      row.clinicalAction || "",
+      // row.clinicalAction || "",
       row.drug || "",
       Array.isArray(row.gene) ? row.gene.join(", ") : row.gene || "",
       Array.isArray(row.genotype)
