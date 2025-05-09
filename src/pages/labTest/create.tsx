@@ -107,13 +107,21 @@ const uniqueTestResults = testResults.filter((row, index, self) => {
             console.log("Generated PDF Blob:", pdfBlob);
 
              // Generate HL7 message using the buildHL7Message function
-            const hl7Message = buildHL7Message({
-                ...values,
-                date_of_birth: date_of_birth ? dayjs(date_of_birth).format("YYYY-MM-DD") : null,
-                specimen_received: specimen_received ? dayjs(specimen_received).format("YYYY-MM-DD") : null,
-                testResults: [
-                ],  
-            });
+            // Panggil fungsi buildHL7Message dengan data lengkap
+        const hl7Message = buildHL7Message({
+            patient_name: values.patient_name,
+            date_of_birth: date_of_birth ? dayjs(date_of_birth).format("YYYY-MM-DD") : null,
+            sex: values.sex,
+            mrn: values.mrn,
+            test_case_id: values.test_case_id,
+            specimen_type: values.specimen_type,
+            specimen_id: values.specimen_id,
+            specimen_collected_from: values.specimen_collected_from,
+            specimen_received: specimen_received ? dayjs(specimen_received).format("YYYY-MM-DD") : null,
+            test_information: values.test_information,
+            lab_result_summary: values.lab_result_summary,
+            testResults: uniqueTestResults, // Pastikan testResults diteruskan
+        });
 
                     // Create HL7 blob
             const hl7Blob = new Blob([hl7Message], { type: "text/plain" });
