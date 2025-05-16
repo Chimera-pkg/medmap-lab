@@ -14,6 +14,7 @@ import {
 import {
   TableOutlined,
   FileAddOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 
 import dataProvider from "@refinedev/simple-rest";
@@ -36,6 +37,8 @@ import Login from "./auth/login";
 import Register from "./auth/register";
 import { API_URL } from "./config";
 import { CustomLayout } from "./components/layout/Layout";
+import { WebApiList } from "./pages/webApi";
+
 
 
 const App: React.FC = () => {
@@ -138,6 +141,22 @@ const App: React.FC = () => {
                 create: "/lab-tests/create",
                 icon: <FileAddOutlined />,
               },
+              {
+                name: "web-test",
+                list: "/web-test",
+                show: "/web-test/show/:id",
+                edit: "/web-test/edit/:id",
+                create: "/web-test/create",
+                icon: <FileAddOutlined />,
+              },
+              {
+              name: "web-api",
+              list: "/web-api",
+              meta: {
+                label: "WEB API",
+                icon: <FileTextOutlined />,
+              },
+            },
             ]}
             notificationProvider={useNotificationProvider}
             options={{
@@ -168,6 +187,10 @@ const App: React.FC = () => {
                   <Route path="show/:id" element={<PostShow />} />
                   <Route path="create" element={<PostCreate />} />
                 </Route>
+                {/* WEB API PATH */}
+                <Route path="/web-api" element={<WebApiList />} />
+                  <Route index element={<PostList />} />
+
               </Route>
 
               <Route path="/login" element={<Login />} />
