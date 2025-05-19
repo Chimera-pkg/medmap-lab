@@ -142,14 +142,6 @@ const App: React.FC = () => {
                 icon: <FileAddOutlined />,
               },
               {
-                name: "web-test",
-                list: "/web-test",
-                show: "/web-test/show/:id",
-                edit: "/web-test/edit/:id",
-                create: "/web-test/create",
-                icon: <FileAddOutlined />,
-              },
-              {
               name: "web-api",
               list: "/web-api",
               meta: {

@@ -1,73 +1,76 @@
-import { List } from "@refinedev/antd";
-import { Table, Space, Button } from "antd";
-import { FilePdfOutlined, FileTextOutlined } from "@ant-design/icons";
-import { API_URL } from "../../config";
+import { List, useTable } from "@refinedev/antd";
+import { Table, Button, Space, message } from "antd";
+import { CopyOutlined } from "@ant-design/icons";
 import React from "react";
 
-interface IWebApiItem {
-  test_case_id: string;
+interface ILabTest {
+  id: number;
   patient_name: string;
-}
-
-function getPDFbyTestID(testID: string, authToken: string) {
-  return `${API_URL}/lab-tests/pdf/${testID}?token=${authToken}`;
-}
-
-function getHL7byTestID(testID: string, authToken: string) {
-  return `${API_URL}/lab-tests/hl7/${testID}?token=${authToken}`;
+  test_case_id: string;
+  report_download_pdf: string;
+  report_download_hl7: string;
 }
 
 export const WebApiList = () => {
-  const [data, setData] = React.useState<IWebApiItem[]>([]);
-  const [loading, setLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    const token = localStorage.getItem("authToken");
-    fetch(`${API_URL}/lab-tests`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => res.json())
-      .then((res) => {
-        setData(res.data || []);
-        setLoading(false);
-      });
-  }, []);
+  const { tableProps } = useTable<ILabTest>({
+    resource: "lab-tests",
+  });
 
   const token = localStorage.getItem("authToken") || "";
 
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    message.success("Copied to clipboard!");
+  };
+
   return (
     <List>
-      <Table
-        dataSource={data}
-        loading={loading}
-        rowKey="test_case_id"
-        pagination={false}
-      >
+      <Table {...tableProps} rowKey="id" pagination={false}>
         <Table.Column dataIndex="test_case_id" title="Test Case ID" />
         <Table.Column dataIndex="patient_name" title="Patient Name" />
         <Table.Column
-          title="PDF API"
-          render={(_, record: IWebApiItem) => (
-            <a
-              href={getPDFbyTestID(record.test_case_id, token)}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Button icon={<FilePdfOutlined />}>PDF API</Button>
-            </a>
-          )}
+          title="Web API PDF URL"
+          render={(_, record: ILabTest) => {
+            const url = record.report_download_pdf
+              ? `${record.report_download_pdf}?token=${token}`
+              : "";
+            return url ? (
+              <Space>
+                <a href={url} target="_blank" rel="noopener noreferrer">
+                  {url}
+                </a>
+                <Button
+                  icon={<CopyOutlined />}
+                  size="small"
+                  onClick={() => handleCopy(url)}
+                />
+              </Space>
+            ) : (
+              <span>-</span>
+            );
+          }}
         />
         <Table.Column
-          title="HL7 API"
-          render={(_, record: IWebApiItem) => (
-            <a
-              href={getHL7byTestID(record.test_case_id, token)}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Button icon={<FileTextOutlined />}>HL7 API</Button>
-            </a>
-          )}
+          title="Web API HL7 URL"
+          render={(_, record: ILabTest) => {
+            const url = record.report_download_hl7
+              ? `${record.report_download_hl7}?token=${token}`
+              : "";
+            return url ? (
+              <Space>
+                <a href={url} target="_blank" rel="noopener noreferrer">
+                  {url}
+                </a>
+                <Button
+                  icon={<CopyOutlined />}
+                  size="small"
+                  onClick={() => handleCopy(url)}
+                />
+              </Space>
+            ) : (
+              <span>-</span>
+            );
+          }}
         />
       </Table>
     </List>
