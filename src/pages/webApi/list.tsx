@@ -1,22 +1,53 @@
-import { List, useTable } from "@refinedev/antd";
-import { Table, Button, Space, message } from "antd";
-import { CopyOutlined } from "@ant-design/icons";
-import React from "react";
+import React, { useState } from "react";
+import { List } from "@refinedev/antd";
+import { Input, Button, Space, Typography, message } from "antd";
+import { CopyOutlined, SearchOutlined } from "@ant-design/icons";
+import { API_URL } from "../../config";
+
+const { Text } = Typography;
 
 interface ILabTest {
-  id: number;
-  patient_name: string;
   test_case_id: string;
-  report_download_pdf: string;
-  report_download_hl7: string;
+  patient_name: string;
+  report_download_pdf?: string;
+  report_download_hl7?: string;
 }
 
 export const WebApiList = () => {
-  const { tableProps } = useTable<ILabTest>({
-    resource: "lab-tests",
-  });
+  const [testCaseId, setTestCaseId] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [hl7Url, setHl7Url] = useState<string | null>(null);
 
-  const token = localStorage.getItem("authToken") || "";
+  // Token langsung disisipkan
+  const token = "Mjk.3-kYR8q30BE_IhGxv6w-vI9S73AhxsBPMs0KUD7WvM8qY0hERfm2nKibZIAR";
+
+  const handleSearch = async () => {
+    if (!testCaseId) {
+      message.warning("Masukkan Test Case ID terlebih dahulu.");
+      return;
+    }
+
+    setLoading(true);
+    setPdfUrl(null);
+    setHl7Url(null);
+
+    try {
+      // Generate URLs
+      const pdfEndpoint = `${API_URL}/lab-tests/pdf/${encodeURIComponent(testCaseId)}`;
+      const hl7Endpoint = `${API_URL}/lab-tests/hl7/${encodeURIComponent(testCaseId)}`;
+
+      // Simpan URL ke state
+      setPdfUrl(`${pdfEndpoint}?token=${token}`);
+      setHl7Url(`${hl7Endpoint}?token=${token}`);
+
+      message.success("Link berhasil dibuat.");
+    } catch (err) {
+      message.error("Gagal membuat link. Silakan coba lagi.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -25,54 +56,51 @@ export const WebApiList = () => {
 
   return (
     <List>
-      <Table {...tableProps} rowKey="id" pagination={false}>
-        <Table.Column dataIndex="test_case_id" title="Test Case ID" />
-        <Table.Column dataIndex="patient_name" title="Patient Name" />
-        <Table.Column
-          title="Web API PDF URL"
-          render={(_, record: ILabTest) => {
-            const url = record.report_download_pdf
-              ? `${record.report_download_pdf}?token=${token}`
-              : "";
-            return url ? (
+      <Space direction="vertical" style={{ width: "100%" }}>
+        <Input.Search
+          placeholder="Masukkan Test Case ID"
+          enterButton={<SearchOutlined />}
+          value={testCaseId}
+          onChange={(e) => setTestCaseId(e.target.value)}
+          onSearch={handleSearch}
+          loading={loading}
+          style={{ maxWidth: 400 }}
+        />
+        {pdfUrl && (
+          <div style={{ marginTop: 16 }}>
+            <div>
+              <Text strong>PDF URL:</Text>{" "}
               <Space>
-                <a href={url} target="_blank" rel="noopener noreferrer">
-                  {url}
+                <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
+                  {pdfUrl}
                 </a>
                 <Button
                   icon={<CopyOutlined />}
                   size="small"
-                  onClick={() => handleCopy(url)}
+                  onClick={() => handleCopy(pdfUrl)}
                 />
               </Space>
-            ) : (
-              <span>-</span>
-            );
-          }}
-        />
-        <Table.Column
-          title="Web API HL7 URL"
-          render={(_, record: ILabTest) => {
-            const url = record.report_download_hl7
-              ? `${record.report_download_hl7}?token=${token}`
-              : "";
-            return url ? (
+            </div>
+          </div>
+        )}
+        {hl7Url && (
+          <div style={{ marginTop: 8 }}>
+            <div>
+              <Text strong>HL7 URL:</Text>{" "}
               <Space>
-                <a href={url} target="_blank" rel="noopener noreferrer">
-                  {url}
+                <a href={hl7Url} target="_blank" rel="noopener noreferrer">
+                  {hl7Url}
                 </a>
                 <Button
                   icon={<CopyOutlined />}
                   size="small"
-                  onClick={() => handleCopy(url)}
+                  onClick={() => handleCopy(hl7Url)}
                 />
               </Space>
-            ) : (
-              <span>-</span>
-            );
-          }}
-        />
-      </Table>
+            </div>
+          </div>
+        )}
+      </Space>
     </List>
   );
 };
