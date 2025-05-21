@@ -1,6 +1,7 @@
 export function buildHL7Message(data: any): string {
   console.log("Data received in buildHL7Message:", data);
 
+  // MSH Segment
   const mshSegment = [
     "MSH",
     "|",
@@ -17,6 +18,7 @@ export function buildHL7Message(data: any): string {
     "2.5",
   ].join("|");
 
+  // PID Segment
   const pidSegment = [
     "PID",
     "1",
@@ -28,6 +30,7 @@ export function buildHL7Message(data: any): string {
     data.sex,
   ].join("|");
 
+  // OBR Segment
   const obrSegment = [
     "OBR",
     "1",
@@ -40,7 +43,11 @@ export function buildHL7Message(data: any): string {
 
   console.log("Test Results:", data.testResults);
 
+  // OBX Segments
   const obxSegments = data.testResults.map((result: any, index: number) => {
+    const clinicalAnnotation =
+      result.clinicalannotation || "No Clinical Annotation provided.";
+
     return [
       "OBX",
       index + 1,
@@ -59,11 +66,13 @@ export function buildHL7Message(data: any): string {
       `Dosage: ${result.dosage || "N/A"}`,
       `Efficacy: ${result.efficacy || "N/A"}`,
       `Evidence: ${result.evidence || "N/A"}`,
+      `Clinical Action: ${clinicalAnnotation}`,
       "F",
     ].join("|");
   });
 
   console.log("Generated OBX Segments:", obxSegments);
 
+  // Combine all segments
   return [mshSegment, pidSegment, obrSegment, ...obxSegments].join("\r");
 }
