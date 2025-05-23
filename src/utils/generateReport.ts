@@ -79,7 +79,7 @@ async function generatePDF(data: any) {
   const headerFontSize = 16;
   const subHeaderFontSize = 10;
   const titleFontSize = 14;
-  const logoSize = { width: 60, height: 60 };
+  const logoSize = { width: 120, height: 60 };
   const hospitalName = "TAN TOCK SENG HOSPITAL";
   const address = "11 Jalan Tan Tock Seng, Singapore 308433";
 
@@ -720,8 +720,7 @@ async function generatePDF(data: any) {
     yPos -= 15;
 
     // Paragraph: Clinical Annotation
-    const clinicalAnnotation =
-      row.clinicalannotation || "No Clinical Annotation provided.";
+    const clinicalAnnotation = row.clinicalannotation;
     const wrappedAnnotation = wrapText(
       clinicalAnnotation,
       fontRegular,

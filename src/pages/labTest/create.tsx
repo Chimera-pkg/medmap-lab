@@ -41,7 +41,7 @@ export const PostCreate: React.FC = () => {
     // Map the CSV data to the required format
     const testResults = csvData.map((row) => ({
         // clinicalAction:  "Up dose",
-        clinicalannotation: row.Clinical_Annotation || "No Clinical Annotation provided",
+        clinicalannotation: row.Clinical_Annotation || "",
         drug: row.Drug_Name || "",
         gene: row.Gene_Name ? row.Gene_Name.split(",") : [],
         genotype: row.GenoType ? row.GenoType.split(",") : [],

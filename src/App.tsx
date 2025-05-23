@@ -38,6 +38,7 @@ import Register from "./auth/register";
 import { API_URL } from "./config";
 import { CustomLayout } from "./components/layout/Layout";
 import { WebApiList } from "./pages/webApi";
+import { WebApiDocumentation } from "./pages/webApi/documentation";
 
 
 
@@ -125,14 +126,7 @@ const App: React.FC = () => {
             dataProvider={dataProvider(API_URL)}
             routerProvider={routerProvider}
             resources={[
-              // {
-              //   name: "Overview",
-              //   list: "/",
-              //   meta: {
-              //     label: "Overview",
-              //     icon: <TableOutlined />,
-              //   },
-              // },
+           
               {
                 name: "lab-tests",
                 list: "/lab-tests",
@@ -142,13 +136,14 @@ const App: React.FC = () => {
                 icon: <FileAddOutlined />,
               },
               {
-              name: "web-api",
-              list: "/web-api",
-              meta: {
-                label: "WEB API",
-                icon: <FileTextOutlined />,
+                name: "web-api",
+                list: "/web-api",
+                show: "/web-api/documentation",
+                meta: {
+                  label: "Web API", // Pastikan tidak ada spasi tambahan atau karakter yang tidak terlihat
+                  icon: <FileTextOutlined />,
+                },
               },
-            },
             ]}
             notificationProvider={useNotificationProvider}
             options={{
@@ -187,6 +182,8 @@ const App: React.FC = () => {
 
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+               <Route path="/web-api/documentation" element={<WebApiDocumentation />} />
+              
 
               <Route
                 element={
