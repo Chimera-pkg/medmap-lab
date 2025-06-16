@@ -155,6 +155,14 @@ export const PostList = () => {
         >
           Delete Selected
         </Button>
+       <Button
+  type="primary"
+  // icon={<UploadOutlined />}
+  // onClick={handleBatchUpload}
+  style={{ marginLeft: 8 }}
+>
+  Batch Upload
+</Button>
       </Space>
       <Table
         {...tableProps}
@@ -204,18 +212,7 @@ export const PostList = () => {
                   >
                     HL7
                   </Button>
-                  {/* <Button
-                    type="link"
-                    icon={<EyeOutlined />}
-                    onClick={() => {
-                      const token = localStorage.getItem("authToken");
-                      const fileUrl = `${API_URL}/${record.report_download_hl7}`;
-                      const viewerUrl = `/hl7-viewer?url=${encodeURIComponent(fileUrl)}&token=${token}`;
-                      window.open(viewerUrl, '_blank');
-                    }}
-                  >
-                    View
-                  </Button> */}
+           
                 </Space>
               ) : (
                 <span>No HL7</span>
