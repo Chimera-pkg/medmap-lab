@@ -29,7 +29,7 @@ import { App as AntdApp, ConfigProvider } from "antd";
 
 import "@refinedev/antd/dist/reset.css";
 
-import { PostList, PostEdit, PostShow, PostCreate } from "./pages/labTest";
+import { PostList, PostEdit, PostShow, PostCreate, BatchUpload } from "./pages/labTest";
 import { DashboardPage } from "./pages/dashboard";
 import PdfViewer from "./pages/viewers/pdf-viewer";
 import Hl7Viewer from "./pages/viewers/hl7-viewer";
@@ -173,6 +173,7 @@ const App: React.FC = () => {
                   <Route path="edit/:id" element={<PostEdit />} />
                   <Route path="show/:id" element={<PostShow />} />
                   <Route path="create" element={<PostCreate />} />
+                  <Route path="batch-upload" element={<BatchUpload />} />
                 </Route>
                 {/* WEB API PATH */}
                 <Route path="/web-api" element={<WebApiList />} />
@@ -182,7 +183,7 @@ const App: React.FC = () => {
 
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-               <Route path="/web-api/documentation" element={<WebApiDocumentation />} />
+              <Route path="/web-api/documentation" element={<WebApiDocumentation />} />
               
 
               <Route

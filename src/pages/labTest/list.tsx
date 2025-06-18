@@ -4,6 +4,7 @@ import moment from "moment";
 import { API_URL } from "../../config";
 import { DeleteOutlined, FilePdfOutlined, FileTextOutlined, EyeOutlined } from "@ant-design/icons";
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface ILabTest {
   id: number;
@@ -24,6 +25,7 @@ export const PostList = () => {
   const { tableProps, tableQueryResult } = useTable<ILabTest>({
     resource: "lab-tests",
   });
+  const navigate = useNavigate();
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([]);
 
@@ -155,14 +157,14 @@ export const PostList = () => {
         >
           Delete Selected
         </Button>
-       <Button
-  type="primary"
-  // icon={<UploadOutlined />}
-  // onClick={handleBatchUpload}
-  style={{ marginLeft: 8 }}
->
-  Batch Upload
-</Button>
+      <Button
+          type="primary"
+          // icon={<UploadOutlined />}
+          onClick={() => navigate('/lab-tests/batch-upload')}
+          style={{ marginLeft: 8 }}
+        >
+          Batch Upload
+        </Button>
       </Space>
       <Table
         {...tableProps}
