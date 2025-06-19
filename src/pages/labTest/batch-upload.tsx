@@ -1,380 +1,304 @@
 import React, { useState } from "react";
-import { Upload, Button, message, Table, Space, Progress, Card, Form, Input, DatePicker, Select } from "antd";
-import { UploadOutlined, DeleteOutlined, CloudUploadOutlined } from "@ant-design/icons";
+import { Upload, Button, message, Card, Space, Table, Progress, Alert } from "antd";
+import { UploadOutlined, CloudUploadOutlined, FileExcelOutlined, FileTextOutlined } from "@ant-design/icons";
 import Papa from "papaparse";
-import dayjs from "dayjs";
+import * as XLSX from "xlsx";
 import { API_URL } from "../../config";
-import { generateReportBlob } from "../../utils/generateReport";
-import { buildHL7Message } from "../../utils/generateHl7";
 import { useNavigate } from "react-router-dom";
 
-interface BatchUploadItem {
-  id: string;
-  fileName: string;
-  csvData: any[];
-  status: 'pending' | 'processing' | 'success' | 'error';
+interface PatientData {
+  sampleReferenceNumber: string;
+  patientName: string;
+  dateOfBirth: string;
+  sex: string;
+  mrn: string;
+  ethnicity: string;
+  specimenType: string;
+  physicianName: string;
+  disease: string;
+  // Add other fields from CSV template
+}
+
+interface LabTestResult {
+  sampleReferenceNumber: string;
+  genotype: string;
+  phenotype: string;
+  activityScore: string;
+  drugName: string;
+  // Add other fields from TXT file
+}
+
+interface BatchUploadData {
+  patientFile: File | null;
+  labResultFile: File | null;
+  patientData: PatientData[];
+  labResultData: LabTestResult[];
+  matchedData: any[];
+  validationErrors: string[];
+  uploadStatus: 'idle' | 'processing' | 'success' | 'error';
   progress: number;
-  error?: string;
-  formData: {
-    patient_name: string;
-    test_case_id: string;
-    physician_name: string;
-    disease: string;
-    // Add other required fields
-  };
 }
 
 export const BatchUpload: React.FC = () => {
   const navigate = useNavigate();
-  const [form] = Form.useForm();
-  const [uploadItems, setUploadItems] = useState<BatchUploadItem[]>([]);
-  const [uploading, setUploading] = useState(false);
+  const [batchData, setBatchData] = useState<BatchUploadData>({
+    patientFile: null,
+    labResultFile: null,
+    patientData: [],
+    labResultData: [],
+    matchedData: [],
+    validationErrors: [],
+    uploadStatus: 'idle',
+    progress: 0
+  });
 
-  // Handle CSV file upload
-  const handleUpload = async (file: File) => {
-    return new Promise<any[]>((resolve, reject) => {
-      Papa.parse(file, {
-        header: true,
-        complete: (result) => {
-          if (result.errors.length > 0) {
-            reject(new Error("CSV parsing failed"));
-            return;
-          }
-          resolve(result.data);
-        },
-        error: (error) => reject(error),
-      });
-    });
+  // Handle Patient List File (CSV/Excel)
+  const handlePatientFileUpload = async (file: File) => {
+    try {
+      let patientData: PatientData[] = [];
+      
+      if (file.name.endsWith('.csv')) {
+        // Parse CSV
+        patientData = await new Promise((resolve, reject) => {
+          Papa.parse(file, {
+            header: true,
+            complete: (result) => {
+              const data = result.data.map((row: any) => ({
+                sampleReferenceNumber: row['Sample Reference Number'] || row['sample_ref_no'],
+                patientName: row['Patient Name'] || row['patient_name'],
+                dateOfBirth: row['Date of Birth'] || row['dob'],
+                sex: row['Sex'] || row['gender'],
+                mrn: row['MRN'] || row['mrn'],
+                ethnicity: row['Ethnicity'] || row['ethnicity'],
+                specimenType: row['Specimen Type'] || row['specimen_type'],
+                physicianName: row['Physician Name'] || row['physician'],
+                disease: row['Disease'] || row['disease']
+              }));
+              resolve(data);
+            },
+            error: reject
+          });
+        });
+      } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        // Parse Excel
+        const arrayBuffer = await file.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        
+        patientData = jsonData.map((row: any) => ({
+          sampleReferenceNumber: row['Sample Reference Number'] || row['sample_ref_no'],
+          patientName: row['Patient Name'] || row['patient_name'],
+          dateOfBirth: row['Date of Birth'] || row['dob'],
+          sex: row['Sex'] || row['gender'],
+          mrn: row['MRN'] || row['mrn'],
+          ethnicity: row['Ethnicity'] || row['ethnicity'],
+          specimenType: row['Specimen Type'] || row['specimen_type'],
+          physicianName: row['Physician Name'] || row['physician'],
+          disease: row['Disease'] || row['disease']
+        }));
+      }
+
+      setBatchData(prev => ({
+        ...prev,
+        patientFile: file,
+        patientData,
+        validationErrors: []
+      }));
+
+      message.success(`Patient file uploaded successfully. Found ${patientData.length} patients.`);
+    } catch (error) {
+      message.error('Failed to parse patient file');
+      console.error(error);
+    }
   };
 
-  // Add files to batch upload list
-  const handleFileChange = async (info: any) => {
-    const { fileList } = info;
-    const newItems: BatchUploadItem[] = [];
+  // Handle Lab Test Results File (TXT)
+  const handleLabResultFileUpload = async (file: File) => {
+    try {
+      const text = await file.text();
+      const lines = text.split('\n');
+      const labResultData: LabTestResult[] = [];
 
-    for (const file of fileList) {
-      if (file.originFileObj && file.status !== 'removed') {
-        try {
-          const csvData = await handleUpload(file.originFileObj);
-          
-          newItems.push({
-            id: file.uid,
-            fileName: file.name,
-            csvData,
-            status: 'pending',
-            progress: 0,
-            formData: {
-              patient_name: '',
-              test_case_id: '',
-              physician_name: '',
-              disease: '',
-            }
+      // Parse TXT file format (adjust based on actual format)
+      for (let i = 1; i < lines.length; i++) { // Skip header
+        const line = lines[i].trim();
+        if (line) {
+          const columns = line.split('\t'); // Assuming tab-separated
+          labResultData.push({
+            sampleReferenceNumber: columns[0],
+            genotype: columns[1] || '',
+            phenotype: columns[2] || '',
+            activityScore: columns[3] || '',
+            drugName: columns[4] || ''
+            // Add more fields based on actual TXT format
           });
-        } catch (error) {
-          message.error(`Failed to parse ${file.name}`);
+        }
+      }
+
+      setBatchData(prev => ({
+        ...prev,
+        labResultFile: file,
+        labResultData,
+        validationErrors: []
+      }));
+
+      message.success(`Lab result file uploaded successfully. Found ${labResultData.length} results.`);
+    } catch (error) {
+      message.error('Failed to parse lab result file');
+      console.error(error);
+    }
+  };
+
+  // Validate and Match Data
+  const validateAndMatchData = () => {
+    const { patientData, labResultData } = batchData;
+    const errors: string[] = [];
+    const matchedData: any[] = [];
+
+    // Check if both files are uploaded
+    if (patientData.length === 0) {
+      errors.push('Patient list file is required');
+    }
+    if (labResultData.length === 0) {
+      errors.push('Lab test results file is required');
+    }
+
+    if (errors.length === 0) {
+      // Match data based on Sample Reference Number
+      for (const patient of patientData) {
+        const labResults = labResultData.filter(
+          result => result.sampleReferenceNumber === patient.sampleReferenceNumber
+        );
+
+        if (labResults.length === 0) {
+          errors.push(`No lab results found for Sample Reference Number: ${patient.sampleReferenceNumber}`);
+        } else {
+          matchedData.push({
+            patient,
+            labResults
+          });
+        }
+      }
+
+      // Check for lab results without matching patients
+      for (const labResult of labResultData) {
+        const hasMatchingPatient = patientData.some(
+          patient => patient.sampleReferenceNumber === labResult.sampleReferenceNumber
+        );
+        if (!hasMatchingPatient) {
+          errors.push(`No patient found for Sample Reference Number: ${labResult.sampleReferenceNumber}`);
         }
       }
     }
 
-    setUploadItems(prev => [...prev.filter(item => 
-      fileList.some((f: any) => f.uid === item.id)
-    ), ...newItems]);
+    setBatchData(prev => ({
+      ...prev,
+      matchedData,
+      validationErrors: errors
+    }));
+
+    return errors.length === 0;
   };
 
-  // Update form data for specific item
-  const updateItemFormData = (itemId: string, field: string, value: any) => {
-    setUploadItems(prev => prev.map(item => 
-      item.id === itemId 
-        ? { ...item, formData: { ...item.formData, [field]: value } }
-        : item
-    ));
-  };
-
-  // Remove item from list
-  const removeItem = (itemId: string) => {
-    setUploadItems(prev => prev.filter(item => item.id !== itemId));
-  };
-
-  // Process single item
-  const processItem = async (item: BatchUploadItem): Promise<void> => {
-    try {
-      // Update status to processing
-      setUploadItems(prev => prev.map(i => 
-        i.id === item.id ? { ...i, status: 'processing', progress: 10 } : i
-      ));
-
-      // Validate required fields
-      const { patient_name, test_case_id, physician_name, disease } = item.formData;
-      if (!patient_name || !test_case_id || !physician_name || !disease) {
-        throw new Error("Missing required fields");
-      }
-
-      // Process CSV data similar to create.tsx
-      const testResults = item.csvData.map((row) => ({
-        clinicalannotation: row.Clinical_Annotation || "",
-        drug: row.Drug_Name || "",
-        gene: row.Gene_Name ? row.Gene_Name.split(",") : [],
-        genotype: row.GenoType ? row.GenoType.split(",") : [],
-        phenotype: row.PhenoType ? row.PhenoType.split(",") : [],
-        toxicity: row.Drug_Response_Toxicity ? row.Drug_Response_Toxicity.split(",") : [],
-        dosage: row.Drug_Response_Dosage ? row.Drug_Response_Dosage.split(",") : [],
-        efficacy: row.Drug_Response_Efficacy ? row.Drug_Response_Efficacy.split(",") : [],
-        evidence: row.Evidence ? row.Evidence.split(",") : [],
-      }));
-
-      // Remove duplicates
-      const uniqueTestResults = testResults.filter((row, index, self) => {
-        return index === self.findIndex(r => 
-          r.drug === row.drug &&
-          JSON.stringify(r.gene) === JSON.stringify(row.gene) &&
-          JSON.stringify(r.genotype) === JSON.stringify(row.genotype)
-        );
-      });
-
-      setUploadItems(prev => prev.map(i => 
-        i.id === item.id ? { ...i, progress: 30 } : i
-      ));
-
-      // Generate report data
-      const reportData = {
-        patient: {
-          "Patient Name": patient_name,
-          "Date of Birth": dayjs().format("YYYY-MM-DD"), // Default or from form
-          Sex: "Unknown", // Default or from form
-          MRN: `MRN-${test_case_id}`, // Generate or from form
-          Ethnicity: "N/A",
-        },
-        specimen: {
-          "Specimen Type": "Whole Blood", // Default or from form
-          "Specimen ID": `SP-${test_case_id}`,
-          "Specimen Collected": "TTSH Hospital",
-          "Specimen Received": dayjs().format("YYYY-MM-DD"),
-        },
-        orderedBy: {
-          Requester: "TTSH Hospital",
-          Physician: physician_name,
-        },
-        caseInfo: {
-          "Test Case ID": test_case_id,
-          "Review Status": "Final",
-          "Date Accessioned": dayjs().format("YYYY-MM-DD"),
-          "Date Reported": dayjs().format("YYYY-MM-DD"),
-        },
-        test_information: "Pharmacogenomics Test", // Default
-        lab_result_summary: "Test completed successfully", // Default
-        testResults: uniqueTestResults,
-      };
-
-      setUploadItems(prev => prev.map(i => 
-        i.id === item.id ? { ...i, progress: 50 } : i
-      ));
-
-      // Generate PDF and HL7
-      const pdfBlob = await generateReportBlob(reportData);
-      const hl7Message = buildHL7Message({
-        patient_name,
-        date_of_birth: dayjs().format("YYYY-MM-DD"),
-        sex: "Unknown",
-        mrn: `MRN-${test_case_id}`,
-        test_case_id,
-        specimen_type: "Whole Blood",
-        specimen_id: `SP-${test_case_id}`,
-        specimen_collected_from: "TTSH Hospital",
-        specimen_received: dayjs().format("YYYY-MM-DD"),
-        test_information: "Pharmacogenomics Test",
-        lab_result_summary: "Test completed successfully",
-        testResults: uniqueTestResults,
-      });
-
-      const hl7Blob = new Blob([hl7Message], { type: "text/plain" });
-
-      setUploadItems(prev => prev.map(i => 
-        i.id === item.id ? { ...i, progress: 70 } : i
-      ));
-
-      // Create FormData
-      const formData = new FormData();
-      const patientName = patient_name.replace(/\s+/g, "_");
-      formData.append("report_download_pdf", pdfBlob, `${patientName}_Report.pdf`);
-      formData.append("report_download_hl7", hl7Blob, `${patientName}_Report.hl7`);
-      
-      // Add all required fields
-      formData.append("patient_name", patient_name);
-      formData.append("test_case_id", test_case_id);
-      formData.append("physician_name", physician_name);
-      formData.append("disease", disease);
-      formData.append("date_of_birth", dayjs().format("YYYY-MM-DD"));
-      formData.append("sex", "Unknown");
-      formData.append("mrn", `MRN-${test_case_id}`);
-      formData.append("ethnicity", "N/A");
-      formData.append("specimen_collected_from", "TTSH Hospital");
-      formData.append("specimen_type", "Whole Blood");
-      formData.append("specimen_id", `SP-${test_case_id}`);
-      formData.append("specimen_received", dayjs().format("YYYY-MM-DD"));
-      formData.append("test_information", "Pharmacogenomics Test");
-      formData.append("lab_result_summary", "Test completed successfully");
-      formData.append("reviewer_name", "System Generated");
-
-      setUploadItems(prev => prev.map(i => 
-        i.id === item.id ? { ...i, progress: 90 } : i
-      ));
-
-      // Send to backend
-      const response = await fetch(`${API_URL}/lab-tests`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to upload to server");
-      }
-
-      // Success
-      setUploadItems(prev => prev.map(i => 
-        i.id === item.id ? { ...i, status: 'success', progress: 100 } : i
-      ));
-
-    } catch (error: any) {
-      setUploadItems(prev => prev.map(i => 
-        i.id === item.id ? { 
-          ...i, 
-          status: 'error', 
-          error: error.message,
-          progress: 0 
-        } : i
-      ));
-    }
-  };
-
-  // Process all items
-  const handleBatchUpload = async () => {
-    setUploading(true);
-    
-    // Validate all items have required data
-    const invalidItems = uploadItems.filter(item => 
-      !item.formData.patient_name || 
-      !item.formData.test_case_id || 
-      !item.formData.physician_name || 
-      !item.formData.disease
-    );
-
-    if (invalidItems.length > 0) {
-      message.error("Please fill in all required fields for all items");
-      setUploading(false);
+  // Process Batch Upload
+  const processBatchUpload = async () => {
+    if (!validateAndMatchData()) {
+      message.error('Please fix validation errors before uploading');
       return;
     }
 
+    setBatchData(prev => ({ ...prev, uploadStatus: 'processing', progress: 0 }));
+
     try {
-      // Process items sequentially to avoid overwhelming the server
-      for (const item of uploadItems) {
-        if (item.status === 'pending') {
-          await processItem(item);
-          // Add small delay between uploads
-          await new Promise(resolve => setTimeout(resolve, 1000));
+      const { matchedData } = batchData;
+      const totalItems = matchedData.length;
+
+      for (let i = 0; i < matchedData.length; i++) {
+        const { patient, labResults } = matchedData[i];
+        
+        // Update progress
+        const progress = Math.round(((i + 1) / totalItems) * 100);
+        setBatchData(prev => ({ ...prev, progress }));
+
+        // Create lab test record for each matched patient
+        const formData = new FormData();
+        
+        // Add patient data
+        formData.append('patient_name', patient.patientName);
+        formData.append('date_of_birth', patient.dateOfBirth);
+        formData.append('sex', patient.sex);
+        formData.append('mrn', patient.mrn);
+        formData.append('ethnicity', patient.ethnicity);
+        formData.append('specimen_type', patient.specimenType);
+        formData.append('physician_name', patient.physicianName);
+        formData.append('disease', patient.disease);
+        formData.append('test_case_id', patient.sampleReferenceNumber);
+        
+        // Add lab results data as JSON
+        formData.append('lab_results', JSON.stringify(labResults));
+        
+        // Add default values
+        formData.append('specimen_collected_from', 'TTSH Hospital');
+        formData.append('specimen_id', `SP-${patient.sampleReferenceNumber}`);
+        formData.append('specimen_received', new Date().toISOString().split('T')[0]);
+        formData.append('test_information', 'Pharmacogenomics Test');
+        formData.append('lab_result_summary', 'Batch uploaded lab test results');
+        formData.append('reviewer_name', 'System Generated');
+
+        // Send to backend
+        const response = await fetch(`${API_URL}/lab-tests/batch`, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to upload record for ${patient.patientName}`);
         }
+
+        // Small delay to avoid overwhelming server
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
 
-      message.success("Batch upload completed!");
+      setBatchData(prev => ({ ...prev, uploadStatus: 'success', progress: 100 }));
+      message.success(`Successfully uploaded ${matchedData.length} lab test records!`);
       
-      // Optional: redirect after success
+      // Redirect to lab tests page after 2 seconds
       setTimeout(() => {
-        navigate("/lab-tests");
+        navigate('/lab-tests');
       }, 2000);
 
-    } catch (error) {
-      message.error("Batch upload failed");
-    } finally {
-      setUploading(false);
+    } catch (error: any) {
+      setBatchData(prev => ({ ...prev, uploadStatus: 'error', progress: 0 }));
+      message.error(`Batch upload failed: ${error.message}`);
+      console.error(error);
     }
   };
 
   const columns = [
     {
-      title: 'File Name',
-      dataIndex: 'fileName',
-      key: 'fileName',
+      title: 'Sample Reference Number',
+      dataIndex: ['patient', 'sampleReferenceNumber'],
+      key: 'sampleReferenceNumber',
     },
     {
       title: 'Patient Name',
-      key: 'patient_name',
-      render: (_, record: BatchUploadItem) => (
-        <Input
-          placeholder="Enter patient name"
-          value={record.formData.patient_name}
-          onChange={(e) => updateItemFormData(record.id, 'patient_name', e.target.value)}
-          disabled={record.status === 'processing' || record.status === 'success'}
-        />
-      ),
+      dataIndex: ['patient', 'patientName'],
+      key: 'patientName',
     },
     {
-      title: 'Test Case ID',
-      key: 'test_case_id',
-      render: (_, record: BatchUploadItem) => (
-        <Input
-          placeholder="Enter test case ID"
-          value={record.formData.test_case_id}
-          onChange={(e) => updateItemFormData(record.id, 'test_case_id', e.target.value)}
-          disabled={record.status === 'processing' || record.status === 'success'}
-        />
-      ),
-    },
-    {
-      title: 'Physician',
-      key: 'physician_name',
-      render: (_, record: BatchUploadItem) => (
-        <Input
-          placeholder="Enter physician name"
-          value={record.formData.physician_name}
-          onChange={(e) => updateItemFormData(record.id, 'physician_name', e.target.value)}
-          disabled={record.status === 'processing' || record.status === 'success'}
-        />
-      ),
-    },
-    {
-      title: 'Disease',
-      key: 'disease',
-      render: (_, record: BatchUploadItem) => (
-        <Input
-          placeholder="Enter disease"
-          value={record.formData.disease}
-          onChange={(e) => updateItemFormData(record.id, 'disease', e.target.value)}
-          disabled={record.status === 'processing' || record.status === 'success'}
-        />
-      ),
+      title: 'Lab Results Count',
+      render: (_, record: any) => record.labResults.length,
+      key: 'labResultsCount',
     },
     {
       title: 'Status',
+      render: () => <span style={{ color: 'green' }}>✓ Matched</span>,
       key: 'status',
-      render: (_, record: BatchUploadItem) => (
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <span style={{ 
-            color: record.status === 'success' ? 'green' : 
-                   record.status === 'error' ? 'red' : 
-                   record.status === 'processing' ? 'blue' : 'gray'
-          }}>
-            {record.status.toUpperCase()}
-          </span>
-          {record.status === 'processing' && (
-            <Progress percent={record.progress} size="small" />
-          )}
-          {record.error && (
-            <span style={{ color: 'red', fontSize: '12px' }}>{record.error}</span>
-          )}
-        </Space>
-      ),
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_, record: BatchUploadItem) => (
-        <Button
-          type="link"
-          danger
-          icon={<DeleteOutlined />}
-          onClick={() => removeItem(record.id)}
-          disabled={record.status === 'processing'}
-        />
-      ),
     },
   ];
 
@@ -382,47 +306,118 @@ export const BatchUpload: React.FC = () => {
     <div style={{ padding: '24px' }}>
       <Card title="Batch Upload Lab Tests" style={{ marginBottom: '24px' }}>
         <Space direction="vertical" style={{ width: '100%' }}>
-          <Upload
-            multiple
-            accept=".csv"
-            onChange={handleFileChange}
-            beforeUpload={() => false} // Prevent auto upload
-            showUploadList={false}
-          >
-            <Button icon={<UploadOutlined />}>
-              Select CSV Files
-            </Button>
-          </Upload>
-          
-          <p style={{ color: '#666', fontSize: '14px' }}>
-            Select multiple CSV files containing lab test data. Each file will become a separate lab test record.
-          </p>
+          <Alert
+            message="Upload Requirements"
+            description="Please upload exactly 2 files: 1 Patient List file (.csv/.xlsx) and 1 Lab Test Results file (.txt)"
+            type="info"
+            showIcon
+          />
+
+          <div style={{ display: 'flex', gap: '16px' }}>
+            {/* Patient List File Upload */}
+            <Card size="small" style={{ flex: 1 }}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FileExcelOutlined style={{ fontSize: '20px', color: '#52c41a' }} />
+                  <strong>Patient List File</strong>
+                </div>
+                <Upload
+                  accept=".csv,.xlsx,.xls"
+                  beforeUpload={(file) => {
+                    handlePatientFileUpload(file);
+                    return false;
+                  }}
+                  showUploadList={false}
+                >
+                  <Button icon={<UploadOutlined />}>
+                    {batchData.patientFile ? 'Change File' : 'Select Patient File'}
+                  </Button>
+                </Upload>
+                {batchData.patientFile && (
+                  <div style={{ color: '#52c41a' }}>
+                    ✓ {batchData.patientFile.name} ({batchData.patientData.length} patients)
+                  </div>
+                )}
+              </Space>
+            </Card>
+
+            {/* Lab Results File Upload */}
+            <Card size="small" style={{ flex: 1 }}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FileTextOutlined style={{ fontSize: '20px', color: '#1890ff' }} />
+                  <strong>Lab Test Results File</strong>
+                </div>
+                <Upload
+                  accept=".txt"
+                  beforeUpload={(file) => {
+                    handleLabResultFileUpload(file);
+                    return false;
+                  }}
+                  showUploadList={false}
+                >
+                  <Button icon={<UploadOutlined />}>
+                    {batchData.labResultFile ? 'Change File' : 'Select Results File'}
+                  </Button>
+                </Upload>
+                {batchData.labResultFile && (
+                  <div style={{ color: '#1890ff' }}>
+                    ✓ {batchData.labResultFile.name} ({batchData.labResultData.length} results)
+                  </div>
+                )}
+              </Space>
+            </Card>
+          </div>
         </Space>
       </Card>
 
-      {uploadItems.length > 0 && (
+      {/* Validation Errors */}
+      {batchData.validationErrors.length > 0 && (
+        <Card title="Validation Errors" style={{ marginBottom: '24px' }}>
+          <Alert
+            message="Please fix the following errors:"
+            description={
+              <ul>
+                {batchData.validationErrors.map((error, index) => (
+                  <li key={index}>{error}</li>
+                ))}
+              </ul>
+            }
+            type="error"
+            showIcon
+          />
+        </Card>
+      )}
+
+      {/* Matched Data Preview */}
+      {batchData.matchedData.length > 0 && (
         <Card 
-          title={`Upload Queue (${uploadItems.length} items)`}
+          title={`Matched Data Preview (${batchData.matchedData.length} records)`}
           extra={
-            <Space>
-              <Button
-                type="primary"
-                icon={<CloudUploadOutlined />}
-                onClick={handleBatchUpload}
-                loading={uploading}
-                disabled={uploadItems.length === 0}
-              >
-                Start Batch Upload
-              </Button>
-            </Space>
+            <Button
+              type="primary"
+              icon={<CloudUploadOutlined />}
+              onClick={processBatchUpload}
+              loading={batchData.uploadStatus === 'processing'}
+              disabled={batchData.validationErrors.length > 0}
+            >
+              Start Batch Upload
+            </Button>
           }
         >
+          {batchData.uploadStatus === 'processing' && (
+            <div style={{ marginBottom: '16px' }}>
+              <Progress percent={batchData.progress} />
+              <p>Uploading records... {batchData.progress}%</p>
+            </div>
+          )}
+          
           <Table
             columns={columns}
-            dataSource={uploadItems}
-            rowKey="id"
-            pagination={false}
-            scroll={{ x: 1200 }}
+            dataSource={batchData.matchedData}
+            rowKey={(record) => record.patient.sampleReferenceNumber}
+            pagination={{ pageSize: 10 }}
+            size="small"
           />
         </Card>
       )}
