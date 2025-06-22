@@ -1,10 +1,13 @@
 import React, { useState } from "react";
-import { Upload, Button, message, Card, Space, Table, Progress, Alert } from "antd";
-import { UploadOutlined, CloudUploadOutlined, FileExcelOutlined, FileTextOutlined } from "@ant-design/icons";
+import { Upload, Button, message, Card, Space, Table, Progress, Alert, Modal } from "antd";
+import { UploadOutlined, CloudUploadOutlined, FileExcelOutlined, FileTextOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { API_URL } from "../../config";
 import { useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
+import { generateReportBlob } from "../../utils/generateReport";
+import { buildHL7Message } from "../../utils/generateHl7";
 
 interface PatientData {
   sampleReferenceNumber: string;
@@ -16,16 +19,19 @@ interface PatientData {
   specimenType: string;
   physicianName: string;
   disease: string;
-  // Add other fields from CSV template
 }
 
 interface LabTestResult {
   sampleReferenceNumber: string;
-  genotype: string;
-  phenotype: string;
-  activityScore: string;
   drugName: string;
-  // Add other fields from TXT file
+  geneName: string;
+  genoType: string;
+  phenoType: string;
+  drugResponseToxicity: string;
+  drugResponseDosage: string;
+  drugResponseEfficacy: string;
+  evidence: string;
+  clinicalAnnotation: string;
 }
 
 interface BatchUploadData {
@@ -37,6 +43,7 @@ interface BatchUploadData {
   validationErrors: string[];
   uploadStatus: 'idle' | 'processing' | 'success' | 'error';
   progress: number;
+  currentProcessingItem: string;
 }
 
 export const BatchUpload: React.FC = () => {
@@ -49,8 +56,12 @@ export const BatchUpload: React.FC = () => {
     matchedData: [],
     validationErrors: [],
     uploadStatus: 'idle',
-    progress: 0
+    progress: 0,
+    currentProcessingItem: ''
   });
+
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [successModalVisible, setSuccessModalVisible] = useState(false);
 
   // Handle Patient List File (CSV/Excel)
   const handlePatientFileUpload = async (file: File) => {
@@ -63,18 +74,29 @@ export const BatchUpload: React.FC = () => {
           Papa.parse(file, {
             header: true,
             complete: (result) => {
-              const data = result.data.map((row: any) => ({
-                sampleReferenceNumber: row['Sample Reference Number'] || row['sample_ref_no'],
-                patientName: row['Patient Name'] || row['patient_name'],
-                dateOfBirth: row['Date of Birth'] || row['dob'],
-                sex: row['Sex'] || row['gender'],
-                mrn: row['MRN'] || row['mrn'],
-                ethnicity: row['Ethnicity'] || row['ethnicity'],
-                specimenType: row['Specimen Type'] || row['specimen_type'],
-                physicianName: row['Physician Name'] || row['physician'],
-                disease: row['Disease'] || row['disease']
-              }));
-              resolve(data);
+              // Debug: Log the raw parsed data
+              console.log("Raw CSV data:", result.data);
+              
+              const data = result.data.map((row: any) => {
+                // Debug: Log each row's reference number
+                console.log("Row sample ref:", row['Sample Reference Number'] || row['sample_ref_no'] || row['SampleReferenceNumber']);
+                
+                return {
+                  sampleReferenceNumber: row['Sample Reference Number'] || row['sample_ref_no'] || row['SampleReferenceNumber'] || '',
+                  patientName: row['Patient Name'] || row['patient_name'] || row['PatientName'] || '',
+                  dateOfBirth: row['Date of Birth'] || row['dob'] || row['DateOfBirth'] || '',
+                  sex: row['Sex'] || row['gender'] || '',
+                  mrn: row['MRN'] || row['mrn'] || '',
+                  ethnicity: row['Ethnicity'] || row['ethnicity'] || '',
+                  specimenType: row['Specimen Type'] || row['specimen_type'] || row['SpecimenType'] || '',
+                  physicianName: row['Physician Name'] || row['physician'] || row['PhysicianName'] || '',
+                  disease: row['Disease'] || row['disease'] || ''
+                };
+              });
+              
+              // Log processed data and filter out invalid rows
+              console.log("Processed patient data:", data);
+              resolve(data.filter((item: any) => item.sampleReferenceNumber && item.sampleReferenceNumber !== 'sample.sampleReferenceNumber'));
             },
             error: reject
           });
@@ -87,19 +109,29 @@ export const BatchUpload: React.FC = () => {
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
         
-        patientData = jsonData.map((row: any) => ({
-          sampleReferenceNumber: row['Sample Reference Number'] || row['sample_ref_no'],
-          patientName: row['Patient Name'] || row['patient_name'],
-          dateOfBirth: row['Date of Birth'] || row['dob'],
-          sex: row['Sex'] || row['gender'],
-          mrn: row['MRN'] || row['mrn'],
-          ethnicity: row['Ethnicity'] || row['ethnicity'],
-          specimenType: row['Specimen Type'] || row['specimen_type'],
-          physicianName: row['Physician Name'] || row['physician'],
-          disease: row['Disease'] || row['disease']
-        }));
+        console.log("Raw Excel data:", jsonData);
+        
+        patientData = jsonData.map((row: any) => {
+          // Map all possible column names
+          const sampleRef = row['Sample Reference Number'] || row['sample_ref_no'] || row['SampleReferenceNumber'] || '';
+          console.log("Excel row sample ref:", sampleRef);
+          
+          return {
+            sampleReferenceNumber: sampleRef,
+            patientName: row['Patient Name'] || row['patient_name'] || row['PatientName'] || '',
+            dateOfBirth: row['Date of Birth'] || row['dob'] || row['DateOfBirth'] || '',
+            sex: row['Sex'] || row['gender'] || '',
+            mrn: row['MRN'] || row['mrn'] || '',
+            ethnicity: row['Ethnicity'] || row['ethnicity'] || '',
+            specimenType: row['Specimen Type'] || row['specimen_type'] || row['SpecimenType'] || '',
+            physicianName: row['Physician Name'] || row['physician'] || row['PhysicianName'] || '',
+            disease: row['Disease'] || row['disease'] || ''
+          };
+        }).filter((item: any) => item.sampleReferenceNumber && item.sampleReferenceNumber !== 'sample.sampleReferenceNumber');
       }
 
+      console.log("Final patient data:", patientData);
+      
       setBatchData(prev => ({
         ...prev,
         patientFile: file,
@@ -109,8 +141,8 @@ export const BatchUpload: React.FC = () => {
 
       message.success(`Patient file uploaded successfully. Found ${patientData.length} patients.`);
     } catch (error) {
+      console.error("Error parsing patient file:", error);
       message.error('Failed to parse patient file');
-      console.error(error);
     }
   };
 
@@ -121,33 +153,104 @@ export const BatchUpload: React.FC = () => {
       const lines = text.split('\n');
       const labResultData: LabTestResult[] = [];
 
-      // Parse TXT file format (adjust based on actual format)
-      for (let i = 1; i < lines.length; i++) { // Skip header
+      // Debug: Log the first few lines of the file
+      console.log("TXT file first lines:", lines.slice(0, 5));
+
+      // Assuming the first line is headers
+      const headers = lines[0].trim().split('\t');
+      console.log("TXT headers:", headers);
+      
+      // Map header indexes
+      const headerIndexes: Record<string, number> = {};
+      headers.forEach((header, index) => {
+        const normalizedHeader = header.trim().toLowerCase().replace(/\s+/g, '');
+        headerIndexes[normalizedHeader] = index;
+        console.log(`Header "${header}" normalized to "${normalizedHeader}" at index ${index}`);
+      });
+
+      // Find the sample reference number column index with more flexible matching
+      const possibleSampleRefHeaders = [
+        'samplereferencenumber', 'samplerefno', 'sampleid', 'sample', 'samplenumber', 'referencenumber'
+      ];
+      
+      let sampleRefIndex = -1;
+      for (const possibleHeader of possibleSampleRefHeaders) {
+        const foundIndex = Object.keys(headerIndexes).findIndex(h => h.includes(possibleHeader));
+        if (foundIndex >= 0) {
+          sampleRefIndex = headerIndexes[Object.keys(headerIndexes)[foundIndex]];
+          console.log(`Found sample reference column at index ${sampleRefIndex} with header ${Object.keys(headerIndexes)[foundIndex]}`);
+          break;
+        }
+      }
+      
+      if (sampleRefIndex === -1) {
+        sampleRefIndex = 0; // Default to first column if not found
+        console.log("No sample reference column found, defaulting to first column");
+      }
+
+      // Parse data rows
+      for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
         if (line) {
-          const columns = line.split('\t'); // Assuming tab-separated
+          const columns = line.split('\t');
+          
+          // Get the sample reference number with trimming to remove whitespace
+          const sampleRef = columns[sampleRefIndex] ? columns[sampleRefIndex].trim() : '';
+          
+          // Skip header rows that might be repeated in the file
+          if (sampleRef === 'Sample Reference Number' || !sampleRef) {
+            continue;
+          }
+          
+          console.log(`Line ${i}: Sample Ref = "${sampleRef}"`);
+          
+          // Get values using header indexes (with fallbacks)
+          const drugIndex = headerIndexes['drugname'] || headerIndexes['drug'] || 1;
+          const geneIndex = headerIndexes['genename'] || headerIndexes['gene'] || 2;
+          const genoTypeIndex = headerIndexes['genotype'] || 3;
+          const phenoTypeIndex = headerIndexes['phenotype'] || 4;
+          const toxicityIndex = headerIndexes['drugresponsetoxicity'] || headerIndexes['toxicity'] || 5;
+          const dosageIndex = headerIndexes['drugresponsedosage'] || headerIndexes['dosage'] || 6;
+          const efficacyIndex = headerIndexes['drugresponseefficacy'] || headerIndexes['efficacy'] || 7;
+          const evidenceIndex = headerIndexes['evidence'] || 8;
+          const clinicalAnnotationIndex = headerIndexes['clinicalannotation'] || 9;
+          
           labResultData.push({
-            sampleReferenceNumber: columns[0],
-            genotype: columns[1] || '',
-            phenotype: columns[2] || '',
-            activityScore: columns[3] || '',
-            drugName: columns[4] || ''
-            // Add more fields based on actual TXT format
+            sampleReferenceNumber: sampleRef,
+            drugName: columns[drugIndex] || '',
+            geneName: columns[geneIndex] || '',
+            genoType: columns[genoTypeIndex] || '',
+            phenoType: columns[phenoTypeIndex] || '',
+            drugResponseToxicity: columns[toxicityIndex] || '',
+            drugResponseDosage: columns[dosageIndex] || '',
+            drugResponseEfficacy: columns[efficacyIndex] || '',
+            evidence: columns[evidenceIndex] || '',
+            clinicalAnnotation: columns[clinicalAnnotationIndex] || ''
           });
         }
       }
 
+      console.log("Processed lab result data:", labResultData);
+      
+      // Filter out invalid rows
+      const validLabResults = labResultData.filter(item => 
+        item.sampleReferenceNumber && 
+        item.sampleReferenceNumber !== 'Sample Reference Number'
+      );
+      
+      console.log("Valid lab results:", validLabResults);
+
       setBatchData(prev => ({
         ...prev,
         labResultFile: file,
-        labResultData,
+        labResultData: validLabResults,
         validationErrors: []
       }));
 
-      message.success(`Lab result file uploaded successfully. Found ${labResultData.length} results.`);
+      message.success(`Lab result file uploaded successfully. Found ${validLabResults.length} results.`);
     } catch (error) {
+      console.error("Error parsing lab result file:", error);
       message.error('Failed to parse lab result file');
-      console.error(error);
     }
   };
 
@@ -159,39 +262,58 @@ export const BatchUpload: React.FC = () => {
 
     // Check if both files are uploaded
     if (patientData.length === 0) {
-      errors.push('Patient list file is required');
+      errors.push('Meta Data list file is required');
     }
     if (labResultData.length === 0) {
       errors.push('Lab test results file is required');
     }
 
     if (errors.length === 0) {
-      // Match data based on Sample Reference Number
-      for (const patient of patientData) {
-        const labResults = labResultData.filter(
-          result => result.sampleReferenceNumber === patient.sampleReferenceNumber
-        );
+      console.log("Validating data match between:");
+      console.log("Patient data:", patientData.map(p => p.sampleReferenceNumber));
+      console.log("Lab results:", labResultData.map(l => l.sampleReferenceNumber));
+      
+      // First pass: Collect all unique sample reference numbers from both datasets
+      const allSampleRefs = new Set([
+        ...patientData.map(p => p.sampleReferenceNumber),
+        ...labResultData.map(l => l.sampleReferenceNumber)
+      ]);
+      
+      console.log("All unique sample refs:", [...allSampleRefs]);
+      
+      // For each patient, find matching lab results
+     for (const patient of patientData) {
+      // Pastikan string
+      const patientRef = (patient.sampleReferenceNumber ?? '').toString().trim();
 
-        if (labResults.length === 0) {
-          errors.push(`No lab results found for Sample Reference Number: ${patient.sampleReferenceNumber}`);
-        } else {
-          matchedData.push({
-            patient,
-            labResults
-          });
-        }
+      const labResults = labResultData.filter(
+        result => ((result.sampleReferenceNumber ?? '').toString().trim() === patientRef)
+      );
+
+      if (labResults.length === 0) {
+        errors.push(`No lab results found for Sample Reference Number: ${patientRef}`);
+      } else {
+        matchedData.push({
+          patient,
+          labResults
+        });
       }
+    }
 
       // Check for lab results without matching patients
       for (const labResult of labResultData) {
+        const labRef = (labResult.sampleReferenceNumber ?? '').toString().trim();
         const hasMatchingPatient = patientData.some(
-          patient => patient.sampleReferenceNumber === labResult.sampleReferenceNumber
+          patient => ((patient.sampleReferenceNumber ?? '').toString().trim() === labRef)
         );
         if (!hasMatchingPatient) {
-          errors.push(`No patient found for Sample Reference Number: ${labResult.sampleReferenceNumber}`);
+          errors.push(`No patient found for Sample Reference Number: ${labRef}`);
         }
       }
     }
+
+    console.log("Validation complete. Errors:", errors);
+    console.log("Matched data:", matchedData);
 
     setBatchData(prev => ({
       ...prev,
@@ -202,6 +324,133 @@ export const BatchUpload: React.FC = () => {
     return errors.length === 0;
   };
 
+  // Process a single record
+  const processSingleRecord = async (patient: PatientData, labResults: LabTestResult[]) => {
+    try {
+      // Map lab results to the format expected by generateReportBlob
+      const testResults = labResults.map(result => ({
+        clinicalannotation: result.clinicalAnnotation || "",
+        drug: result.drugName || "",
+        gene: result.geneName ? result.geneName.split(",") : [],
+        genotype: result.genoType ? result.genoType.split(",") : [],
+        phenotype: result.phenoType ? result.phenoType.split(",") : [],
+        toxicity: result.drugResponseToxicity ? result.drugResponseToxicity.split(",") : [],
+        dosage: result.drugResponseDosage ? result.drugResponseDosage.split(",") : [],
+        efficacy: result.drugResponseEfficacy ? result.drugResponseEfficacy.split(",") : [],
+        evidence: result.evidence ? result.evidence.split(",") : [],
+      }));
+
+      // Remove duplicates
+      const uniqueTestResults = testResults.filter((row, index, self) => {
+        return (
+          index === self.findIndex(
+            (r) =>
+              r.drug === row.drug &&
+              JSON.stringify(r.gene) === JSON.stringify(row.gene) &&
+              JSON.stringify(r.genotype) === JSON.stringify(row.genotype)
+          )
+        );
+      });
+
+      // Format data for report
+      const reportData = {
+        patient: {
+          "Patient Name": patient.patientName,
+          "Date of Birth": patient.dateOfBirth || dayjs().format("YYYY-MM-DD"),
+          Sex: patient.sex,
+          MRN: patient.mrn || `MRN-${patient.sampleReferenceNumber}`,
+          Ethnicity: patient.ethnicity || "N/A",
+        },
+        specimen: {
+          "Specimen Type": patient.specimenType || "Whole Blood",
+          "Specimen ID": `SP-${patient.sampleReferenceNumber}`,
+          "Specimen Collected": "TTSH Hospital",
+          "Specimen Received": dayjs().format("YYYY-MM-DD"),
+        },
+        orderedBy: {
+          Requester: "TTSH Hospital",
+          Physician: patient.physicianName,
+        },
+        caseInfo: {
+          "Test Case ID": patient.sampleReferenceNumber,
+          "Review Status": "Final",
+          "Date Accessioned": dayjs().format("YYYY-MM-DD"),
+          "Date Reported": dayjs().format("YYYY-MM-DD"),
+        },
+        test_information: "Pharmacogenomics Test", // Default or can be customized
+        lab_result_summary: "Batch uploaded lab test results", // Default or can be customized
+        testResults: uniqueTestResults,
+      };
+
+      // Generate PDF blob
+      const pdfBlob = await generateReportBlob(reportData);
+
+      // Generate HL7 message
+      const hl7Message = buildHL7Message({
+        patient_name: patient.patientName,
+        date_of_birth: patient.dateOfBirth || dayjs().format("YYYY-MM-DD"),
+        sex: patient.sex,
+        mrn: patient.mrn || `MRN-${patient.sampleReferenceNumber}`,
+        test_case_id: patient.sampleReferenceNumber,
+        specimen_type: patient.specimenType || "Whole Blood",
+        specimen_id: `SP-${patient.sampleReferenceNumber}`,
+        specimen_collected_from: "TTSH Hospital",
+        specimen_received: dayjs().format("YYYY-MM-DD"),
+        test_information: "Pharmacogenomics Test",
+        lab_result_summary: "Batch uploaded lab test results",
+        testResults: uniqueTestResults,
+      });
+
+      // Create HL7 blob
+      const hl7Blob = new Blob([hl7Message], { type: "text/plain" });
+
+      // Create FormData object
+      const formData = new FormData();
+      
+      // Add files
+      const patientName = patient.patientName.replace(/\s+/g, "_");
+      formData.append("report_download_pdf", pdfBlob, `${patientName}_Report.pdf`);
+      formData.append("report_download_hl7", hl7Blob, `${patientName}_Report.hl7`);
+      
+      // Add patient data
+      formData.append("patient_name", patient.patientName);
+      formData.append("date_of_birth", patient.dateOfBirth || dayjs().format("YYYY-MM-DD"));
+      formData.append("sex", patient.sex);
+      formData.append("mrn", patient.mrn || `MRN-${patient.sampleReferenceNumber}`);
+      formData.append("ethnicity", patient.ethnicity || "N/A");
+      formData.append("specimen_type", patient.specimenType || "Whole Blood");
+      formData.append("physician_name", patient.physicianName);
+      formData.append("disease", patient.disease);
+      formData.append("test_case_id", patient.sampleReferenceNumber);
+      
+      // Add other required fields
+      formData.append("specimen_collected_from", "TTSH Hospital");
+      formData.append("specimen_id", `SP-${patient.sampleReferenceNumber}`);
+      formData.append("specimen_received", dayjs().format("YYYY-MM-DD"));
+      formData.append("test_information", "Pharmacogenomics Test");
+      formData.append("lab_result_summary", "Batch uploaded lab test results");
+      formData.append("reviewer_name", "System Generated");
+
+      // Send to API
+      const response = await fetch(`${API_URL}/lab-tests`, {
+        method: "POST",
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to upload record for ${patient.patientName}`);
+      }
+
+      return true;
+    } catch (error) {
+      console.error(`Error processing record for ${patient.patientName}:`, error);
+      throw error;
+    }
+  };
+
   // Process Batch Upload
   const processBatchUpload = async () => {
     if (!validateAndMatchData()) {
@@ -209,73 +458,74 @@ export const BatchUpload: React.FC = () => {
       return;
     }
 
-    setBatchData(prev => ({ ...prev, uploadStatus: 'processing', progress: 0 }));
+    setConfirmModalVisible(false);
+    setBatchData(prev => ({ 
+      ...prev, 
+      uploadStatus: 'processing', 
+      progress: 0,
+      currentProcessingItem: ''
+    }));
 
     try {
       const { matchedData } = batchData;
       const totalItems = matchedData.length;
+      let successCount = 0;
+      let failCount = 0;
 
       for (let i = 0; i < matchedData.length; i++) {
         const { patient, labResults } = matchedData[i];
         
-        // Update progress
-        const progress = Math.round(((i + 1) / totalItems) * 100);
-        setBatchData(prev => ({ ...prev, progress }));
+        // Update progress and current item
+        const progress = Math.round(((i) / totalItems) * 100);
+        setBatchData(prev => ({ 
+          ...prev, 
+          progress, 
+          currentProcessingItem: patient.patientName 
+        }));
 
-        // Create lab test record for each matched patient
-        const formData = new FormData();
-        
-        // Add patient data
-        formData.append('patient_name', patient.patientName);
-        formData.append('date_of_birth', patient.dateOfBirth);
-        formData.append('sex', patient.sex);
-        formData.append('mrn', patient.mrn);
-        formData.append('ethnicity', patient.ethnicity);
-        formData.append('specimen_type', patient.specimenType);
-        formData.append('physician_name', patient.physicianName);
-        formData.append('disease', patient.disease);
-        formData.append('test_case_id', patient.sampleReferenceNumber);
-        
-        // Add lab results data as JSON
-        formData.append('lab_results', JSON.stringify(labResults));
-        
-        // Add default values
-        formData.append('specimen_collected_from', 'TTSH Hospital');
-        formData.append('specimen_id', `SP-${patient.sampleReferenceNumber}`);
-        formData.append('specimen_received', new Date().toISOString().split('T')[0]);
-        formData.append('test_information', 'Pharmacogenomics Test');
-        formData.append('lab_result_summary', 'Batch uploaded lab test results');
-        formData.append('reviewer_name', 'System Generated');
-
-        // Send to backend
-        const response = await fetch(`${API_URL}/lab-tests/batch`, {
-          method: 'POST',
-          body: formData,
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to upload record for ${patient.patientName}`);
+        try {
+          // Process this record
+          await processSingleRecord(patient, labResults);
+          successCount++;
+          
+          // Update progress
+          const newProgress = Math.round(((i + 1) / totalItems) * 100);
+          setBatchData(prev => ({ 
+            ...prev, 
+            progress: newProgress
+          }));
+        } catch (error) {
+          failCount++;
+          console.error(`Failed to process ${patient.patientName}:`, error);
         }
 
         // Small delay to avoid overwhelming server
         await new Promise(resolve => setTimeout(resolve, 500));
       }
 
-      setBatchData(prev => ({ ...prev, uploadStatus: 'success', progress: 100 }));
-      message.success(`Successfully uploaded ${matchedData.length} lab test records!`);
+      // Final update
+      setBatchData(prev => ({ 
+        ...prev, 
+        uploadStatus: 'success', 
+        progress: 100,
+        currentProcessingItem: ''
+      }));
+
+      // Show success message
+      message.success(`Successfully uploaded ${successCount} lab test records! ${failCount > 0 ? `(${failCount} failed)` : ''}`);
       
-      // Redirect to lab tests page after 2 seconds
-      setTimeout(() => {
-        navigate('/lab-tests');
-      }, 2000);
+      // Show success modal
+      setSuccessModalVisible(true);
 
     } catch (error: any) {
-      setBatchData(prev => ({ ...prev, uploadStatus: 'error', progress: 0 }));
+      setBatchData(prev => ({ 
+        ...prev, 
+        uploadStatus: 'error', 
+        progress: 0,
+        currentProcessingItem: ''
+      }));
       message.error(`Batch upload failed: ${error.message}`);
-      console.error(error);
+      console.error("Batch upload error:", error);
     }
   };
 
@@ -291,9 +541,34 @@ export const BatchUpload: React.FC = () => {
       key: 'patientName',
     },
     {
-      title: 'Lab Results Count',
-      render: (_, record: any) => record.labResults.length,
-      key: 'labResultsCount',
+      title: 'Patient Info',
+      key: 'patientInfo',
+      render: (_, record: any) => (
+        <div>
+          <div>Sex: {record.patient.sex || 'N/A'}</div>
+          <div>DOB: {record.patient.dateOfBirth || 'N/A'}</div>
+          <div>Disease: {record.patient.disease || 'N/A'}</div>
+        </div>
+      ),
+    },
+    {
+      title: 'Lab Results',
+      key: 'labResults',
+      render: (_, record: any) => (
+        <div>
+          <div>Count: {record.labResults.length}</div>
+          <div>
+            {record.labResults.slice(0, 2).map((result: any, index: number) => (
+              <div key={index} style={{ fontSize: '12px', color: '#666' }}>
+                {result.drugName || 'N/A'} / {result.geneName || 'N/A'}
+              </div>
+            ))}
+            {record.labResults.length > 2 && (
+              <div style={{ fontSize: '12px', color: '#666' }}>...</div>
+            )}
+          </div>
+        </div>
+      ),
     },
     {
       title: 'Status',
@@ -313,13 +588,13 @@ export const BatchUpload: React.FC = () => {
             showIcon
           />
 
-          <div style={{ display: 'flex', gap: '16px' }}>
+          <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
             {/* Patient List File Upload */}
             <Card size="small" style={{ flex: 1 }}>
               <Space direction="vertical" style={{ width: '100%' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <FileExcelOutlined style={{ fontSize: '20px', color: '#52c41a' }} />
-                  <strong>Patient List File</strong>
+                  <strong>Meta Data List File</strong>
                 </div>
                 <Upload
                   accept=".csv,.xlsx,.xls"
@@ -368,6 +643,30 @@ export const BatchUpload: React.FC = () => {
               </Space>
             </Card>
           </div>
+          
+          {/* SUBMIT BUTTON */}
+          <Button
+            type="primary"
+            size="large"
+            icon={<CloudUploadOutlined />}
+            onClick={() => {
+              if (validateAndMatchData()) {
+                setConfirmModalVisible(true);
+              }
+            }}
+            loading={batchData.uploadStatus === 'processing'}
+            disabled={!batchData.patientFile || !batchData.labResultFile}
+            style={{ 
+              width: '100%', 
+              height: '50px', 
+              fontSize: '16px',
+              marginTop: '10px',
+              backgroundColor: '#1890ff', 
+              borderColor: '#1890ff' 
+            }}
+          >
+            PROCESS BATCH UPLOAD
+          </Button>
         </Space>
       </Card>
 
@@ -407,9 +706,24 @@ export const BatchUpload: React.FC = () => {
         >
           {batchData.uploadStatus === 'processing' && (
             <div style={{ marginBottom: '16px' }}>
-              <Progress percent={batchData.progress} />
-              <p>Uploading records... {batchData.progress}%</p>
+              <Progress percent={batchData.progress} status="active" />
+              <p>
+                Uploading records... {batchData.progress}%
+                {batchData.currentProcessingItem && (
+                  <span> (Processing: {batchData.currentProcessingItem})</span>
+                )}
+              </p>
             </div>
+          )}
+          
+          {batchData.uploadStatus === 'success' && (
+            <Alert 
+              message="Upload Complete" 
+              description="All records have been successfully processed. Redirecting to lab tests page..."
+              type="success"
+              showIcon
+              style={{ marginBottom: '16px' }}
+            />
           )}
           
           <Table
@@ -421,6 +735,41 @@ export const BatchUpload: React.FC = () => {
           />
         </Card>
       )}
+
+      {/* Confirmation Modal */}
+      
+
+      {/* Success Modal */}
+      <Modal
+        title={<div style={{ display: 'flex', alignItems: 'center' }}><CheckCircleOutlined style={{ marginRight: '8px', color: '#52c41a' }} /> Upload Successful</div>}
+        open={successModalVisible}
+        footer={[
+          <Button 
+            key="ok" 
+            type="primary"
+            onClick={() => {
+              setSuccessModalVisible(false);
+              navigate('/lab-tests');
+            }}
+          >
+            Go to Lab Tests
+          </Button>
+        ]}
+        closable={false}
+      >
+        <Alert
+          message="Batch upload completed successfully"
+          description={
+            <div>
+              <p>All <strong>{batchData.matchedData.length} lab test records</strong> have been successfully uploaded.</p>
+              <p>You will be redirected to the Lab Tests page when you click the button below.</p>
+            </div>
+          }
+          type="success"
+          showIcon
+        />
+        <Progress percent={100} status="success" />
+      </Modal>
     </div>
   );
 };
