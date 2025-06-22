@@ -325,131 +325,154 @@ export const BatchUpload: React.FC = () => {
   };
 
   // Process a single record
-  const processSingleRecord = async (patient: PatientData, labResults: LabTestResult[]) => {
-    try {
-      // Map lab results to the format expected by generateReportBlob
-      const testResults = labResults.map(result => ({
-        clinicalannotation: result.clinicalAnnotation || "",
-        drug: result.drugName || "",
-        gene: result.geneName ? result.geneName.split(",") : [],
-        genotype: result.genoType ? result.genoType.split(",") : [],
-        phenotype: result.phenoType ? result.phenoType.split(",") : [],
-        toxicity: result.drugResponseToxicity ? result.drugResponseToxicity.split(",") : [],
-        dosage: result.drugResponseDosage ? result.drugResponseDosage.split(",") : [],
-        efficacy: result.drugResponseEfficacy ? result.drugResponseEfficacy.split(",") : [],
-        evidence: result.evidence ? result.evidence.split(",") : [],
-      }));
-
-      // Remove duplicates
-      const uniqueTestResults = testResults.filter((row, index, self) => {
-        return (
-          index === self.findIndex(
-            (r) =>
-              r.drug === row.drug &&
-              JSON.stringify(r.gene) === JSON.stringify(row.gene) &&
-              JSON.stringify(r.genotype) === JSON.stringify(row.genotype)
-          )
-        );
-      });
-
-      // Format data for report
-      const reportData = {
-        patient: {
-          "Patient Name": patient.patientName,
-          "Date of Birth": patient.dateOfBirth || dayjs().format("YYYY-MM-DD"),
-          Sex: patient.sex,
-          MRN: patient.mrn || `MRN-${patient.sampleReferenceNumber}`,
-          Ethnicity: patient.ethnicity || "N/A",
-        },
-        specimen: {
-          "Specimen Type": patient.specimenType || "Whole Blood",
-          "Specimen ID": `SP-${patient.sampleReferenceNumber}`,
-          "Specimen Collected": "TTSH Hospital",
-          "Specimen Received": dayjs().format("YYYY-MM-DD"),
-        },
-        orderedBy: {
-          Requester: "TTSH Hospital",
-          Physician: patient.physicianName,
-        },
-        caseInfo: {
-          "Test Case ID": patient.sampleReferenceNumber,
-          "Review Status": "Final",
-          "Date Accessioned": dayjs().format("YYYY-MM-DD"),
-          "Date Reported": dayjs().format("YYYY-MM-DD"),
-        },
-        test_information: "Pharmacogenomics Test", // Default or can be customized
-        lab_result_summary: "Batch uploaded lab test results", // Default or can be customized
-        testResults: uniqueTestResults,
-      };
-
-      // Generate PDF blob
-      const pdfBlob = await generateReportBlob(reportData);
-
-      // Generate HL7 message
-      const hl7Message = buildHL7Message({
-        patient_name: patient.patientName,
-        date_of_birth: patient.dateOfBirth || dayjs().format("YYYY-MM-DD"),
-        sex: patient.sex,
-        mrn: patient.mrn || `MRN-${patient.sampleReferenceNumber}`,
-        test_case_id: patient.sampleReferenceNumber,
-        specimen_type: patient.specimenType || "Whole Blood",
-        specimen_id: `SP-${patient.sampleReferenceNumber}`,
-        specimen_collected_from: "TTSH Hospital",
-        specimen_received: dayjs().format("YYYY-MM-DD"),
-        test_information: "Pharmacogenomics Test",
-        lab_result_summary: "Batch uploaded lab test results",
-        testResults: uniqueTestResults,
-      });
-
-      // Create HL7 blob
-      const hl7Blob = new Blob([hl7Message], { type: "text/plain" });
-
-      // Create FormData object
-      const formData = new FormData();
-      
-      // Add files
-      const patientName = patient.patientName.replace(/\s+/g, "_");
-      formData.append("report_download_pdf", pdfBlob, `${patientName}_Report.pdf`);
-      formData.append("report_download_hl7", hl7Blob, `${patientName}_Report.hl7`);
-      
-      // Add patient data
-      formData.append("patient_name", patient.patientName);
-      formData.append("date_of_birth", patient.dateOfBirth || dayjs().format("YYYY-MM-DD"));
-      formData.append("sex", patient.sex);
-      formData.append("mrn", patient.mrn || `MRN-${patient.sampleReferenceNumber}`);
-      formData.append("ethnicity", patient.ethnicity || "N/A");
-      formData.append("specimen_type", patient.specimenType || "Whole Blood");
-      formData.append("physician_name", patient.physicianName);
-      formData.append("disease", patient.disease);
-      formData.append("test_case_id", patient.sampleReferenceNumber);
-      
-      // Add other required fields
-      formData.append("specimen_collected_from", "TTSH Hospital");
-      formData.append("specimen_id", `SP-${patient.sampleReferenceNumber}`);
-      formData.append("specimen_received", dayjs().format("YYYY-MM-DD"));
-      formData.append("test_information", "Pharmacogenomics Test");
-      formData.append("lab_result_summary", "Batch uploaded lab test results");
-      formData.append("reviewer_name", "System Generated");
-
-      // Send to API
-      const response = await fetch(`${API_URL}/lab-tests`, {
-        method: "POST",
-        body: formData,
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to upload record for ${patient.patientName}`);
-      }
-
-      return true;
-    } catch (error) {
-      console.error(`Error processing record for ${patient.patientName}:`, error);
-      throw error;
+  // Process a single record
+const processSingleRecord = async (patient: PatientData, labResults: LabTestResult[]) => {
+  try {
+    // Map lab results to the format expected by generateReportBlob
+    const testResults = labResults.map(result => ({
+      clinicalannotation: result.clinicalAnnotation || "",
+      drug: result.drugName || "",
+      gene: result.geneName ? result.geneName.split(",") : [],
+      genotype: result.genoType ? result.genoType.split(",") : [],
+      phenotype: result.phenoType ? result.phenoType.split(",") : [],
+      toxicity: result.drugResponseToxicity ? result.drugResponseToxicity.split(",") : [],
+      dosage: result.drugResponseDosage ? result.drugResponseDosage.split(",") : [],
+      efficacy: result.drugResponseEfficacy ? result.drugResponseEfficacy.split(",") : [],
+      evidence: result.evidence ? result.evidence.split(",") : [],
+    }));
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      throw new Error("Authentication token not found. Please login again.");
     }
-  };
+    
+    // Pastikan patient_name tidak kosong
+    const patientName = patient.patientName || `John Doe (${patient.sampleReferenceNumber})`;
+    
+    // Pastikan sex tidak kosong - default ke 'Male'
+    const sex = patient.sex || "Male";
+    
+    // Remove duplicates
+    const uniqueTestResults = testResults.filter((row, index, self) => {
+      return (
+        index === self.findIndex(
+          (r) =>
+            r.drug === row.drug &&
+            JSON.stringify(r.gene) === JSON.stringify(row.gene) &&
+            JSON.stringify(r.genotype) === JSON.stringify(row.genotype)
+        )
+      );
+    });
+
+    // Format data for report
+    const reportData = {
+      patient: {
+        "Patient Name": patientName,
+        "Date of Birth": patient.dateOfBirth || dayjs().format("YYYY-MM-DD"),
+        Sex: sex,
+        MRN: patient.mrn || `MRN-${patient.sampleReferenceNumber}`,
+        Ethnicity: patient.ethnicity || "N/A",
+      },
+      specimen: {
+        "Specimen Type": patient.specimenType || "Whole Blood",
+        "Specimen ID": `SP-${patient.sampleReferenceNumber}`,
+        "Specimen Collected": "TTSH Hospital",
+        "Specimen Received": dayjs().format("YYYY-MM-DD"),
+      },
+      orderedBy: {
+        Requester: "TTSH Hospital",
+        Physician: patient.physicianName || "Unknown Physician",
+      },
+      caseInfo: {
+        "Test Case ID": patient.sampleReferenceNumber,
+        "Review Status": "Final",
+        "Date Accessioned": dayjs().format("YYYY-MM-DD"),
+        "Date Reported": dayjs().format("YYYY-MM-DD"),
+      },
+      test_information: "Pharmacogenomics Test",
+      lab_result_summary: "Batch uploaded lab test results",
+      testResults: uniqueTestResults,
+    };
+
+    // Generate PDF blob
+    const pdfBlob = await generateReportBlob(reportData);
+
+    // Generate HL7 message
+    const hl7Message = buildHL7Message({
+      patient_name: patientName,
+      date_of_birth: patient.dateOfBirth || dayjs().format("YYYY-MM-DD"),
+      sex: sex, // Gunakan nilai sex yang sudah dipastikan
+      mrn: patient.mrn || `MRN-${patient.sampleReferenceNumber}`,
+      test_case_id: patient.sampleReferenceNumber,
+      specimen_type: patient.specimenType || "Whole Blood",
+      specimen_id: `SP-${patient.sampleReferenceNumber}`,
+      specimen_collected_from: "TTSH Hospital",
+      specimen_received: dayjs().format("YYYY-MM-DD"),
+      test_information: "Pharmacogenomics Test",
+      lab_result_summary: "Batch uploaded lab test results",
+      testResults: uniqueTestResults,
+    });
+
+    // Create HL7 blob
+    const hl7Blob = new Blob([hl7Message], { type: "text/plain" });
+
+    // Create FormData object
+    const formData = new FormData();
+    
+    // Add files
+    const sanitizedPatientName = patientName.replace(/\s+/g, "_");
+    formData.append("report_download_pdf", pdfBlob, `${sanitizedPatientName}_Report.pdf`);
+    formData.append("report_download_hl7", hl7Blob, `${sanitizedPatientName}_Report.hl7`);
+  
+    // Add patient data
+    formData.append("patient_name", patientName);
+    formData.append("date_of_birth", patient.dateOfBirth || dayjs().format("YYYY-MM-DD"));
+    formData.append("sex", sex); // Gunakan nilai sex yang sudah dipastikan
+    formData.append("mrn", patient.mrn || `MRN-${patient.sampleReferenceNumber}`);
+    formData.append("ethnicity", patient.ethnicity || "N/A");
+    formData.append("specimen_type", patient.specimenType || "Whole Blood");
+    formData.append("physician_name", patient.physicianName || "Unknown Physician");
+    formData.append("disease", patient.disease || "Not specified");
+    formData.append("test_case_id", patient.sampleReferenceNumber);
+    
+    // Add other required fields
+    formData.append("specimen_collected_from", "TTSH Hospital");
+    formData.append("specimen_id", `SP-${patient.sampleReferenceNumber}`);
+    formData.append("specimen_received", dayjs().format("YYYY-MM-DD"));
+    formData.append("test_information", "Pharmacogenomics Test");
+    formData.append("lab_result_summary", "Batch uploaded lab test results");
+    formData.append("reviewer_name", "System Generated");
+
+    // Debug info
+    console.log("Sending data for patient:", patientName);
+    console.log("Sex value:", sex);
+    console.log("Sample Reference Number:", patient.sampleReferenceNumber);
+
+    // Send to API
+    const response = await fetch(`${API_URL}/lab-tests`, {
+      method: "POST",
+      body: formData,
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      // Tambahkan logging detail response untuk debug
+      const errorText = await response.text();
+      console.error(`Server responded with ${response.status}: ${errorText}`);
+      throw new Error(`Failed to upload record for ${patientName}: ${response.statusText}`);
+    }
+
+    // Parse response untuk memastikan data disimpan dengan benar
+    const responseData = await response.json();
+    console.log("API Response:", responseData);
+
+    return responseData; // Return data yang berhasil disimpan
+  } catch (error) {
+    console.error(`Error processing record for ${patient.patientName || 'unknown patient'}:`, error);
+    throw error;
+  }
+};
 
   // Process Batch Upload
   const processBatchUpload = async () => {
@@ -737,7 +760,31 @@ export const BatchUpload: React.FC = () => {
       )}
 
       {/* Confirmation Modal */}
-      
+      <Modal
+        title={<div style={{ display: 'flex', alignItems: 'center' }}><CloudUploadOutlined style={{ marginRight: '8px', color: '#1890ff' }} /> Confirm Batch Upload</div>}
+        open={confirmModalVisible}
+        onOk={processBatchUpload}
+        onCancel={() => setConfirmModalVisible(false)}
+        okText="Start Processing"
+        cancelText="Cancel"
+        okButtonProps={{ 
+          style: { backgroundColor: '#52c41a', borderColor: '#52c41a' }
+        }}
+      >
+        <Alert
+          message="You are about to upload multiple records"
+          description={
+            <div>
+              <p>You are about to process and upload <strong>{batchData.matchedData.length} lab test records</strong>.</p>
+              <p>This will generate PDF and HL7 files for each record and store them in the database.</p>
+              <p>Do you want to continue?</p>
+            </div>
+          }
+          type="info"
+          showIcon
+          style={{ marginBottom: '16px' }}
+        />
+      </Modal>
 
       {/* Success Modal */}
       <Modal
