@@ -193,9 +193,8 @@ export const PostList = () => {
         rowSelection={rowSelection} // Add row selection
       >
         <Table.Column dataIndex="patient_name" title="PATIENT NAME" />
-        <Table.Column dataIndex="test_case_id" title="TEST CASE ID" />
-        <Table.Column dataIndex="physician_name" title="PHYSICIAN NAME" />
-        <Table.Column dataIndex="disease" title="DISEASE" />
+        <Table.Column dataIndex="requester" title="REQUESTER" />
+        <Table.Column dataIndex="test_request_reference_number" title="TEST REQUEST REFERENCE NUMBER" />
         <Table.Column dataIndex="specimen_type" title="SPECIMEN TYPE" />
         <Table.Column
           title="REPORT DOWNLOAD"

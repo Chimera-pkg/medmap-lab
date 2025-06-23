@@ -90,8 +90,10 @@ export const BatchUpload: React.FC = () => {
   const [successModalVisible, setSuccessModalVisible] = useState(false);
 
   // Handle Patient List File (CSV/Excel)
+  
   const handlePatientFileUpload = async (file: File) => {
     try {
+      
       let patientData: PatientData[] = [];
       
       if (file.name.endsWith('.csv')) {
@@ -102,50 +104,57 @@ export const BatchUpload: React.FC = () => {
             complete: (result) => {
               // Debug: Log the raw parsed data
               console.log("Raw CSV data:", result.data);
-              
+             
               const data = result.data.map((row: any) => {
+              // Combine first and last name for patient name
+
+              const firstName = row['Patient First Name'] || row['patient_first_name'] || row['patient.firstName'] || row['firstName'] || '';
+              const lastName = row['Patient Last Name'] || row['patient_last_name'] || row['patient.lastName'] || row['lastName'] || '';
+              const patientName = `${firstName} ${lastName}`.trim();
+
               return {
                 // Basic required fields
-                sampleReferenceNumber: row['Sample Reference Number'] || row['sample_ref_no'] || row['SampleReferenceNumber'] || '',
-                patientName: row['Patient Name'] || row['patient_name'] || row['PatientName'] || '',
-                patientLastName: row['Patient Last Name'] || row['patient_last_name'] || row['PatientLastName'] || '',
-                dateOfBirth: row['Date of Birth'] || row['dob'] || row['DateOfBirth'] || '',
-                sex: row['Sex'] || row['gender'] || '',
-                mrn: row['MRN'] || row['mrn'] || '',
-                ethnicity: row['Ethnicity'] || row['ethnicity'] || '',
-                specimenType: row['Specimen Type'] || row['specimen_type'] || row['SpecimenType'] || '',
-                physicianName: row['Physician Name'] || row['physician'] || row['PhysicianName'] || '',
+                sampleReferenceNumber: row['Sample Reference Number'] || row['sample_reference_number'] || row['sample.sampleReferenceNumber'] || '',
+                patientName: patientName,
+                patientLastName: lastName,
+                dateOfBirth: row['Patient Birthday'] || row['patient_birthday'] || row['patient.birthday'] || row['dob'] || '',
+                sex: row['Patient Gender'] || row['patient_gender'] || row['patient.gender'] || '',
+                mrn: row['Patient Medical Record Number(MRN)'] || row['patient.mrn'] || row['MRN'] || '',
+                ethnicity: row['Patient Population'] || row['patient_population'] || row['patient.populationDetail'] || '',
+                specimenType: row['Sample Source'] || row['sample_source'] || row['sample.sampleSource'] || '',
+                physicianName: row['Physician Name'] || row['physician_name'] || row['physician'] || '',
                 disease: row['Disease'] || row['disease'] || '',
                 
                 // Additional patient demographics
-                patientAgeGroup: row['Patient Age Group'] || row['patient_age_group'] || row['AgeGroup'] || '',
-                patientSuperPopulation: row['Patient Super Population'] || row['patient_super_population'] || row['SuperPopulation'] || '',
-                patientPopulation: row['Patient Population'] || row['patient_population'] || row['Population'] || '',
-                isPatientHispanic: row['Is Patient Hispanic'] || row['is_patient_hispanic'] || row['Hispanic'] === 'true' || row['Hispanic'] === 'Yes',
-                patientBodyWeight: parseFloat(row['Patient Body Weight'] || row['patient_body_weight'] || row['BodyWeight'] || '0') || undefined,
-                treatmentHistoryCarbamazepine: row['Treatment History Carbamazepine'] || row['treatment_history_carbamazepine'] || row['TreatmentHistory'] || '',
-                patientIdType: row['Patient ID Type'] || row['patient_id_type'] || row['IDType'] || '',
-                idNumber: row['ID Number'] || row['id_number'] || row['IDNumber'] || '',
-                patientContactNumber: row['Patient Contact Number'] || row['patient_contact_number'] || row['ContactNumber'] || '',
-                patientAddress: row['Patient Address'] || row['patient_address'] || row['Address'] || '',
+                patientAgeGroup: row['Patient Age Group'] || row['patient_age_group'] || row['patient.ageGroup'] || '',
+                patientSuperPopulation: row['Patient Super Population'] || row['patient_super_population'] || row['patient.population'] || '',
+                patientPopulation: row['Patient Population'] || row['patient_population'] || row['patient.populationDetail'] || '',
+                isPatientHispanic: (row['Is Patient Hispanic'] || row['is_patient_hispanic'] || row['patient.hispanic'] || '') === 'Yes' || 
+                                  (row['Is Patient Hispanic'] || row['is_patient_hispanic'] || row['patient.hispanic'] || '') === 'true',
+                patientBodyWeight: parseFloat(row['Patient Body Weight'] || row['patient_body_weight'] || row['patient.bodyWeight'] || '0') || undefined,
+                treatmentHistoryCarbamazepine: row['Treatment History of carbamazepine of Patient'] || row['treatment_history_carbamazepine'] || row['patient.treatmentHistory'] || '',
+                patientIdType: row['ID type'] || row['patient_id_type'] || row['patient.idType'] || '',
+                idNumber: row['ID Number'] || row['id_number'] || row['patient.idNumber'] || '',
+                patientContactNumber: row['Patient Contact Number'] || row['patient_contact_number'] || row['patient.mobileNumber'] || '',
+                patientAddress: row['Patient Address'] || row['patient_address'] || row['patient.address'] || '',
                 
                 // Test and request information
-                testRequestReferenceNumber: row['Test Request Reference Number'] || row['test_request_reference_number'] || row['RequestRefNumber'] || '',
-                requester: row['Requester'] || row['requester'] || '',
-                requesterAddress: row['Requester Address'] || row['requester_address'] || row['RequesterAddress'] || '',
-                testComment: row['Test Comment'] || row['test_comment'] || row['TestComment'] || '',
-                panelId: row['Panel ID'] || row['panel_id'] || row['PanelID'] || '',
-                drugGroupId: row['Drug Group ID'] || row['drug_group_id'] || row['DrugGroupID'] || '',
-                clinicalNotes: row['Clinical Notes'] || row['clinical_notes'] || row['ClinicalNotes'] || '',
+                testRequestReferenceNumber: row['Test Request Reference Number'] || row['test_request_reference_number'] || row['test.referenceNumber'] || '',
+                requester: row['Requester'] || row['requester'] || row['test.sampleFromInstitution'] || '',
+                requesterAddress: row['Requester Address'] || row['requester_address'] || row['test.requesterAddress'] || '',
+                testComment: row['Test Comment'] || row['test_comment'] || row['test.remarks'] || '',
+                panelId: row['Panel ID'] || row['panel_id'] || row['config.panelId'] || '',
+                drugGroupId: row['Drug Group ID'] || row['drug_group_id'] || row['config.drugGroupId'] || '',
+                clinicalNotes: row['Clinical Notes'] || row['clinical_notes'] || row['config.clinicalNotes'] || '',
                 
                 // Sample information
-                sampleReferenceNumber2: row['Sample Reference Number 2'] || row['sample_reference_number'] || row['SampleRefNumber'] || '',
-                sampleCollectionDate: row['Sample Collection Date'] || row['sample_collection_date'] || row['CollectionDate'] || '',
-                sampleReceivedDate: row['Sample Received Date'] || row['sample_received_date'] || row['ReceivedDate'] || '',
-                sampleDescription: row['Sample Description'] || row['sample_description'] || row['SampleDescription'] || '',
-                platform: row['Platform'] || row['platform'] || '',
-                dataType: row['Data Type'] || row['data_type'] || row['DataType'] || '',
-                sampleFile: row['Sample File'] || row['sample_file'] || row['SampleFile'] || ''
+                sampleReferenceNumber2: row['Sample Reference Number'] || row['sample_reference_number'] || row['sample.sampleReferenceNumber'] || '',
+                sampleCollectionDate: row['Sample Collection Date'] || row['sample_collection_date'] || row['sample.collectionDate'] || '',
+                sampleReceivedDate: row['Sample Received Date'] || row['sample_received_date'] || row['sample.receivedDate'] || '',
+                sampleDescription: row['Sample Description (Free Text)'] || row['sample_description'] || row['sample.description'] || '',
+                platform: row['Platform'] || row['platform'] || row['sample.platform'] || '',
+                dataType: row['Data type'] || row['data_type'] || row['sample.dataType'] || '',
+                sampleFile: row['Sample File'] || row['sample_file'] || row['sample.fileNameR1'] || ''
               };
             });
               
@@ -252,8 +261,10 @@ export const BatchUpload: React.FC = () => {
       });
 
       // Find the sample reference number column index with more flexible matching
+      // Expand possible sample reference header matches
       const possibleSampleRefHeaders = [
-        'samplereferencenumber', 'samplerefno', 'sampleid', 'sample', 'samplenumber', 'referencenumber'
+        'samplereferencenumber', 'samplerefno', 'sampleid', 'sample', 'samplenumber', 'referencenumber',
+        'sample.samplereferencenumber', 'sample_reference_number'
       ];
       
       let sampleRefIndex = -1;
@@ -407,7 +418,31 @@ export const BatchUpload: React.FC = () => {
     return errors.length === 0;
   };
 
-  // Process a single record
+    const convertExcelDate = (excelDate: string | number): string => {
+          if (!excelDate) return '';
+          
+          // If it's already a date string in a recognizable format, return it
+          if (typeof excelDate === 'string' && (excelDate.includes('-') || excelDate.includes('/'))) {
+            // Try to parse and standardize
+            const date = new Date(excelDate);
+            if (!isNaN(date.getTime())) {
+              return date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+            }
+          }
+          
+          // Convert Excel date number to JS date
+          try {
+            const dateNum = typeof excelDate === 'string' ? parseInt(excelDate) : excelDate;
+            if (isNaN(dateNum)) return '';
+            
+            // Excel dates start from December 30, 1899
+            const date = new Date((dateNum - 25569) * 86400 * 1000);
+            return date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+          } catch (e) {
+            console.error("Error converting date:", e);
+            return '';
+          }
+        };
   // Process a single record
 const processSingleRecord = async (patient: PatientData, labResults: LabTestResult[]) => {
   try {
@@ -428,11 +463,23 @@ const processSingleRecord = async (patient: PatientData, labResults: LabTestResu
       throw new Error("Authentication token not found. Please login again.");
     }
     
-    // Pastikan patient_name tidak kosong
-    const patientName = patient.patientName || `John Doe (${patient.sampleReferenceNumber})`;
+    // Better patient name handling: combine first and last name properly
+    let patientName = patient.patientName || '';
+    if (!patientName && patient.patientLastName) {
+      patientName = patient.patientLastName;
+    }
+    if (!patientName) {
+      patientName = `Unknown (${patient.sampleReferenceNumber})`;
+    }
     
     // Pastikan sex tidak kosong - default ke 'Male'
     const sex = patient.sex || "Male";
+
+     // Convert dates properly
+    const dateOfBirth = convertExcelDate(patient.dateOfBirth || '');
+    const sampleCollectionDate = convertExcelDate(patient.sampleCollectionDate || '');
+    const sampleReceivedDate = convertExcelDate(patient.sampleReceivedDate || '');
+    const currentDate = dayjs().format("YYYY-MM-DD");
     
     // Remove duplicates
     const uniqueTestResults = testResults.filter((row, index, self) => {
@@ -447,14 +494,16 @@ const processSingleRecord = async (patient: PatientData, labResults: LabTestResu
     });
 
     // Format data for report
+   // Format data for report
     const reportData = {
       patient: {
         "Patient Name": patientName,
-        "Date of Birth": patient.dateOfBirth || dayjs().format("YYYY-MM-DD"),
+        "Date of Birth": dateOfBirth || currentDate,
         Sex: sex,
         MRN: patient.mrn || `MRN-${patient.sampleReferenceNumber}`,
         Ethnicity: patient.ethnicity || "N/A",
       },
+      
       specimen: {
         "Specimen Type": patient.specimenType || "Whole Blood",
         "Specimen ID": `SP-${patient.sampleReferenceNumber}`,
@@ -495,6 +544,8 @@ const processSingleRecord = async (patient: PatientData, labResults: LabTestResu
       testResults: uniqueTestResults,
     });
 
+      
+
     // Create HL7 blob
     const hl7Blob = new Blob([hl7Message], { type: "text/plain" });
 
@@ -507,9 +558,9 @@ const processSingleRecord = async (patient: PatientData, labResults: LabTestResu
     formData.append("report_download_hl7", hl7Blob, `${sanitizedPatientName}_Report.hl7`);
   
     // Basic patient information
-    formData.append("patient_name", patientName);
+     formData.append("patient_name", patientName);
     formData.append("patient_last_name", patient.patientLastName || "");
-    formData.append("date_of_birth", patient.dateOfBirth || dayjs().format("YYYY-MM-DD"));
+    formData.append("date_of_birth", dateOfBirth || currentDate);
     formData.append("sex", sex);
     formData.append("mrn", patient.mrn || `MRN-${patient.sampleReferenceNumber}`);
     formData.append("ethnicity", patient.ethnicity || "N/A");
@@ -537,8 +588,8 @@ const processSingleRecord = async (patient: PatientData, labResults: LabTestResu
 
     // Sample information
     formData.append("sample_reference_number", patient.sampleReferenceNumber2 || patient.sampleReferenceNumber || "");
-    formData.append("sample_collection_date", patient.sampleCollectionDate || "");
-    formData.append("sample_received_date", patient.sampleReceivedDate || "");
+    formData.append("sample_collection_date", sampleCollectionDate || "");
+    formData.append("sample_received_date", sampleReceivedDate || "");
     formData.append("sample_description", patient.sampleDescription || "");
     formData.append("platform", patient.platform || "");
     formData.append("data_type", patient.dataType || "");
@@ -556,10 +607,22 @@ const processSingleRecord = async (patient: PatientData, labResults: LabTestResu
     formData.append("test_case_id", patient.sampleReferenceNumber);
     formData.append("disease", patient.disease || "Not specified");
 
-    // Debug info
-    console.log("Sending data for patient:", patientName);
-    console.log("Sex value:", sex);
-    console.log("Sample Reference Number:", patient.sampleReferenceNumber);
+   // Debug info - log what we're actually sending
+    console.log("Sending patient data:", {
+      // Log entire patient object for debugging
+      patientName,
+      dateOfBirth,
+      sampleCollectionDate,
+      sampleReceivedDate,
+      sampleReferenceNumber: patient.sampleReferenceNumber,
+      // Add these to see if they contain data
+      testRequestReferenceNumber: patient.testRequestReferenceNumber,
+      panelId: patient.panelId,
+      drugGroupId: patient.drugGroupId,
+      idNumber: patient.idNumber,
+      requester: patient.requester,
+      // Add more fields as needed
+    });
 
     // Send to API
     const response = await fetch(`${API_URL}/lab-tests`, {
@@ -682,9 +745,11 @@ const processSingleRecord = async (patient: PatientData, labResults: LabTestResu
       key: 'patientInfo',
       render: (_: unknown, record: any) => (
         <div>
-          <div>Sex: {record.patient.sex || 'N/A'}</div>
-          <div>DOB: {record.patient.dateOfBirth || 'N/A'}</div>
-          <div>Disease: {record.patient.disease || 'N/A'}</div>
+          <div><strong>Name:</strong> {record.patient.patientName}</div>
+          <div><strong>Sex:</strong> {record.patient.sex || 'N/A'}</div>
+          <div><strong>DOB:</strong> {record.patient.dateOfBirth || 'N/A'}</div>
+          <div><strong>MRN:</strong> {record.patient.mrn || 'N/A'}</div>
+          <div><strong>Sample Ref:</strong> {record.patient.sampleReferenceNumber}</div>
         </div>
       ),
     },
