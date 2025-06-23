@@ -566,7 +566,7 @@ const processSingleRecord = async (patient: PatientData, labResults: LabTestResu
     {
       title: 'Patient Info',
       key: 'patientInfo',
-      render: (_, record: any) => (
+      render: (_: unknown, record: any) => (
         <div>
           <div>Sex: {record.patient.sex || 'N/A'}</div>
           <div>DOB: {record.patient.dateOfBirth || 'N/A'}</div>
@@ -577,7 +577,7 @@ const processSingleRecord = async (patient: PatientData, labResults: LabTestResu
     {
       title: 'Lab Results',
       key: 'labResults',
-      render: (_, record: any) => (
+      render: (_: unknown, record: any) => (
         <div>
           <div>Count: {record.labResults.length}</div>
           <div>
