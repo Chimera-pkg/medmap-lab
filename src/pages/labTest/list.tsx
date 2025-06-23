@@ -16,8 +16,34 @@ interface ILabTest {
   report_status: string;
   report_download_pdf: string;
   report_download_hl7: string;
+  // New fields
+  patient_age_group?: string;
+  patient_super_population?: string;
+  patient_population?: string;
+  is_patient_hispanic?: boolean;
+  patient_body_weight?: number;
+  treatment_history_carbamazepine?: string;
+  patient_id_type?: string;
+  id_number?: string;
+  patient_contact_number?: string;
+  patient_address?: string;
+  test_request_reference_number?: string;
+  requester?: string;
+  requester_address?: string;
+  test_comment?: string;
+  panel_id?: string;
+  drug_group_id?: string;
+  clinical_notes?: string;
+  sample_reference_number?: string;
+  sample_collection_date?: string;
+  sample_received_date?: string;
+  sample_description?: string;
+  platform?: string;
+  data_type?: string;
+  sample_file?: string;
   created_at: string;
   updated_at: string;
+
 }
 
 export const PostList = () => {
@@ -131,12 +157,7 @@ export const PostList = () => {
       message.error("Failed to download file");
     });
   };
-  
-  // const openFileViewer = (fileUrl: string, fileType: string) => {
-  //   const token = localStorage.getItem("authToken");
-  //   const viewerUrl = `/file-viewer?url=${encodeURIComponent(fileUrl)}&type=${fileType}&token=${token}`;
-  //   window.open(viewerUrl, '_blank');
-  // };
+
 
   const rowSelection = {
     selectedRowKeys,

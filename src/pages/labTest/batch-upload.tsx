@@ -12,6 +12,7 @@ import { buildHL7Message } from "../../utils/generateHl7";
 interface PatientData {
   sampleReferenceNumber: string;
   patientName: string;
+  patientLastName?: string;
   dateOfBirth: string;
   sex: string;
   mrn: string;
@@ -19,6 +20,31 @@ interface PatientData {
   specimenType: string;
   physicianName: string;
   disease: string;
+  // New fields to match backend validation
+  patientAgeGroup?: string;
+  patientSuperPopulation?: string;
+  patientPopulation?: string;
+  isPatientHispanic?: boolean;
+  patientBodyWeight?: number;
+  treatmentHistoryCarbamazepine?: string;
+  patientIdType?: string;
+  idNumber?: string;
+  patientContactNumber?: string;
+  patientAddress?: string;
+  testRequestReferenceNumber?: string;
+  requester?: string;
+  requesterAddress?: string;
+  testComment?: string;
+  panelId?: string;
+  drugGroupId?: string;
+  clinicalNotes?: string;
+  sampleReferenceNumber2?: string;
+  sampleCollectionDate?: string;
+  sampleReceivedDate?: string;
+  sampleDescription?: string;
+  platform?: string;
+  dataType?: string;
+  sampleFile?: string;
 }
 
 interface LabTestResult {
@@ -78,21 +104,50 @@ export const BatchUpload: React.FC = () => {
               console.log("Raw CSV data:", result.data);
               
               const data = result.data.map((row: any) => {
-                // Debug: Log each row's reference number
-                console.log("Row sample ref:", row['Sample Reference Number'] || row['sample_ref_no'] || row['SampleReferenceNumber']);
+              return {
+                // Basic required fields
+                sampleReferenceNumber: row['Sample Reference Number'] || row['sample_ref_no'] || row['SampleReferenceNumber'] || '',
+                patientName: row['Patient Name'] || row['patient_name'] || row['PatientName'] || '',
+                patientLastName: row['Patient Last Name'] || row['patient_last_name'] || row['PatientLastName'] || '',
+                dateOfBirth: row['Date of Birth'] || row['dob'] || row['DateOfBirth'] || '',
+                sex: row['Sex'] || row['gender'] || '',
+                mrn: row['MRN'] || row['mrn'] || '',
+                ethnicity: row['Ethnicity'] || row['ethnicity'] || '',
+                specimenType: row['Specimen Type'] || row['specimen_type'] || row['SpecimenType'] || '',
+                physicianName: row['Physician Name'] || row['physician'] || row['PhysicianName'] || '',
+                disease: row['Disease'] || row['disease'] || '',
                 
-                return {
-                  sampleReferenceNumber: row['Sample Reference Number'] || row['sample_ref_no'] || row['SampleReferenceNumber'] || '',
-                  patientName: row['Patient Name'] || row['patient_name'] || row['PatientName'] || '',
-                  dateOfBirth: row['Date of Birth'] || row['dob'] || row['DateOfBirth'] || '',
-                  sex: row['Sex'] || row['gender'] || '',
-                  mrn: row['MRN'] || row['mrn'] || '',
-                  ethnicity: row['Ethnicity'] || row['ethnicity'] || '',
-                  specimenType: row['Specimen Type'] || row['specimen_type'] || row['SpecimenType'] || '',
-                  physicianName: row['Physician Name'] || row['physician'] || row['PhysicianName'] || '',
-                  disease: row['Disease'] || row['disease'] || ''
-                };
-              });
+                // Additional patient demographics
+                patientAgeGroup: row['Patient Age Group'] || row['patient_age_group'] || row['AgeGroup'] || '',
+                patientSuperPopulation: row['Patient Super Population'] || row['patient_super_population'] || row['SuperPopulation'] || '',
+                patientPopulation: row['Patient Population'] || row['patient_population'] || row['Population'] || '',
+                isPatientHispanic: row['Is Patient Hispanic'] || row['is_patient_hispanic'] || row['Hispanic'] === 'true' || row['Hispanic'] === 'Yes',
+                patientBodyWeight: parseFloat(row['Patient Body Weight'] || row['patient_body_weight'] || row['BodyWeight'] || '0') || undefined,
+                treatmentHistoryCarbamazepine: row['Treatment History Carbamazepine'] || row['treatment_history_carbamazepine'] || row['TreatmentHistory'] || '',
+                patientIdType: row['Patient ID Type'] || row['patient_id_type'] || row['IDType'] || '',
+                idNumber: row['ID Number'] || row['id_number'] || row['IDNumber'] || '',
+                patientContactNumber: row['Patient Contact Number'] || row['patient_contact_number'] || row['ContactNumber'] || '',
+                patientAddress: row['Patient Address'] || row['patient_address'] || row['Address'] || '',
+                
+                // Test and request information
+                testRequestReferenceNumber: row['Test Request Reference Number'] || row['test_request_reference_number'] || row['RequestRefNumber'] || '',
+                requester: row['Requester'] || row['requester'] || '',
+                requesterAddress: row['Requester Address'] || row['requester_address'] || row['RequesterAddress'] || '',
+                testComment: row['Test Comment'] || row['test_comment'] || row['TestComment'] || '',
+                panelId: row['Panel ID'] || row['panel_id'] || row['PanelID'] || '',
+                drugGroupId: row['Drug Group ID'] || row['drug_group_id'] || row['DrugGroupID'] || '',
+                clinicalNotes: row['Clinical Notes'] || row['clinical_notes'] || row['ClinicalNotes'] || '',
+                
+                // Sample information
+                sampleReferenceNumber2: row['Sample Reference Number 2'] || row['sample_reference_number'] || row['SampleRefNumber'] || '',
+                sampleCollectionDate: row['Sample Collection Date'] || row['sample_collection_date'] || row['CollectionDate'] || '',
+                sampleReceivedDate: row['Sample Received Date'] || row['sample_received_date'] || row['ReceivedDate'] || '',
+                sampleDescription: row['Sample Description'] || row['sample_description'] || row['SampleDescription'] || '',
+                platform: row['Platform'] || row['platform'] || '',
+                dataType: row['Data Type'] || row['data_type'] || row['DataType'] || '',
+                sampleFile: row['Sample File'] || row['sample_file'] || row['SampleFile'] || ''
+              };
+            });
               
               // Log processed data and filter out invalid rows
               console.log("Processed patient data:", data);
@@ -112,23 +167,51 @@ export const BatchUpload: React.FC = () => {
         console.log("Raw Excel data:", jsonData);
         
         patientData = jsonData.map((row: any) => {
-          // Map all possible column names
-          const sampleRef = row['Sample Reference Number'] || row['sample_ref_no'] || row['SampleReferenceNumber'] || '';
-          console.log("Excel row sample ref:", sampleRef);
+        return {
+          // Basic required fields
+          sampleReferenceNumber: row['Sample Reference Number'] || row['sample_ref_no'] || row['SampleReferenceNumber'] || '',
+          patientName: row['Patient Name'] || row['patient_name'] || row['PatientName'] || '',
+          patientLastName: row['Patient Last Name'] || row['patient_last_name'] || row['PatientLastName'] || '',
+          dateOfBirth: row['Date of Birth'] || row['dob'] || row['DateOfBirth'] || '',
+          sex: row['Sex'] || row['gender'] || '',
+          mrn: row['MRN'] || row['mrn'] || '',
+          ethnicity: row['Ethnicity'] || row['ethnicity'] || '',
+          specimenType: row['Specimen Type'] || row['specimen_type'] || row['SpecimenType'] || '',
+          physicianName: row['Physician Name'] || row['physician'] || row['PhysicianName'] || '',
+          disease: row['Disease'] || row['disease'] || '',
           
-          return {
-            sampleReferenceNumber: sampleRef,
-            patientName: row['Patient Name'] || row['patient_name'] || row['PatientName'] || '',
-            dateOfBirth: row['Date of Birth'] || row['dob'] || row['DateOfBirth'] || '',
-            sex: row['Sex'] || row['gender'] || '',
-            mrn: row['MRN'] || row['mrn'] || '',
-            ethnicity: row['Ethnicity'] || row['ethnicity'] || '',
-            specimenType: row['Specimen Type'] || row['specimen_type'] || row['SpecimenType'] || '',
-            physicianName: row['Physician Name'] || row['physician'] || row['PhysicianName'] || '',
-            disease: row['Disease'] || row['disease'] || ''
-          };
-        }).filter((item: any) => item.sampleReferenceNumber && item.sampleReferenceNumber !== 'sample.sampleReferenceNumber');
-      }
+          // Additional patient demographics
+          patientAgeGroup: row['Patient Age Group'] || row['patient_age_group'] || row['AgeGroup'] || '',
+          patientSuperPopulation: row['Patient Super Population'] || row['patient_super_population'] || row['SuperPopulation'] || '',
+          patientPopulation: row['Patient Population'] || row['patient_population'] || row['Population'] || '',
+          isPatientHispanic: row['Is Patient Hispanic'] || row['is_patient_hispanic'] || row['Hispanic'] === 'true' || row['Hispanic'] === 'Yes',
+          patientBodyWeight: parseFloat(row['Patient Body Weight'] || row['patient_body_weight'] || row['BodyWeight'] || '0') || undefined,
+          treatmentHistoryCarbamazepine: row['Treatment History Carbamazepine'] || row['treatment_history_carbamazepine'] || row['TreatmentHistory'] || '',
+          patientIdType: row['Patient ID Type'] || row['patient_id_type'] || row['IDType'] || '',
+          idNumber: row['ID Number'] || row['id_number'] || row['IDNumber'] || '',
+          patientContactNumber: row['Patient Contact Number'] || row['patient_contact_number'] || row['ContactNumber'] || '',
+          patientAddress: row['Patient Address'] || row['patient_address'] || row['Address'] || '',
+          
+          // Test and request information
+          testRequestReferenceNumber: row['Test Request Reference Number'] || row['test_request_reference_number'] || row['RequestRefNumber'] || '',
+          requester: row['Requester'] || row['requester'] || '',
+          requesterAddress: row['Requester Address'] || row['requester_address'] || row['RequesterAddress'] || '',
+          testComment: row['Test Comment'] || row['test_comment'] || row['TestComment'] || '',
+          panelId: row['Panel ID'] || row['panel_id'] || row['PanelID'] || '',
+          drugGroupId: row['Drug Group ID'] || row['drug_group_id'] || row['DrugGroupID'] || '',
+          clinicalNotes: row['Clinical Notes'] || row['clinical_notes'] || row['ClinicalNotes'] || '',
+          
+          // Sample information
+          sampleReferenceNumber2: row['Sample Reference Number 2'] || row['sample_reference_number'] || row['SampleRefNumber'] || '',
+          sampleCollectionDate: row['Sample Collection Date'] || row['sample_collection_date'] || row['CollectionDate'] || '',
+          sampleReceivedDate: row['Sample Received Date'] || row['sample_received_date'] || row['ReceivedDate'] || '',
+          sampleDescription: row['Sample Description'] || row['sample_description'] || row['SampleDescription'] || '',
+          platform: row['Platform'] || row['platform'] || '',
+          dataType: row['Data Type'] || row['data_type'] || row['DataType'] || '',
+          sampleFile: row['Sample File'] || row['sample_file'] || row['SampleFile'] || ''
+        };
+      }).filter((item: any) => item.sampleReferenceNumber && item.sampleReferenceNumber !== 'sample.sampleReferenceNumber');
+    }
 
       console.log("Final patient data:", patientData);
       
@@ -423,24 +506,55 @@ const processSingleRecord = async (patient: PatientData, labResults: LabTestResu
     formData.append("report_download_pdf", pdfBlob, `${sanitizedPatientName}_Report.pdf`);
     formData.append("report_download_hl7", hl7Blob, `${sanitizedPatientName}_Report.hl7`);
   
-    // Add patient data
+    // Basic patient information
     formData.append("patient_name", patientName);
+    formData.append("patient_last_name", patient.patientLastName || "");
     formData.append("date_of_birth", patient.dateOfBirth || dayjs().format("YYYY-MM-DD"));
-    formData.append("sex", sex); // Gunakan nilai sex yang sudah dipastikan
+    formData.append("sex", sex);
     formData.append("mrn", patient.mrn || `MRN-${patient.sampleReferenceNumber}`);
     formData.append("ethnicity", patient.ethnicity || "N/A");
-    formData.append("specimen_type", patient.specimenType || "Whole Blood");
-    formData.append("physician_name", patient.physicianName || "Unknown Physician");
-    formData.append("disease", patient.disease || "Not specified");
-    formData.append("test_case_id", patient.sampleReferenceNumber);
     
-    // Add other required fields
+    // Additional patient details
+    formData.append("patient_age_group", patient.patientAgeGroup || "");
+    formData.append("patient_super_population", patient.patientSuperPopulation || "");
+    formData.append("patient_population", patient.patientPopulation || "");
+    formData.append("is_patient_hispanic", patient.isPatientHispanic ? "true" : "false");
+    formData.append("patient_body_weight", patient.patientBodyWeight ? patient.patientBodyWeight.toString() : "");
+    formData.append("treatment_history_carbamazepine", patient.treatmentHistoryCarbamazepine || "");
+    formData.append("patient_id_type", patient.patientIdType || "");
+    formData.append("id_number", patient.idNumber || "");
+    formData.append("patient_contact_number", patient.patientContactNumber || "");
+    formData.append("patient_address", patient.patientAddress || "");
+
+    // Test and request information
+    formData.append("test_request_reference_number", patient.testRequestReferenceNumber || "");
+    formData.append("requester", patient.requester || "");
+    formData.append("requester_address", patient.requesterAddress || "");
+    formData.append("test_comment", patient.testComment || "");
+    formData.append("panel_id", patient.panelId || "");
+    formData.append("drug_group_id", patient.drugGroupId || "");
+    formData.append("clinical_notes", patient.clinicalNotes || "");
+
+    // Sample information
+    formData.append("sample_reference_number", patient.sampleReferenceNumber2 || patient.sampleReferenceNumber || "");
+    formData.append("sample_collection_date", patient.sampleCollectionDate || "");
+    formData.append("sample_received_date", patient.sampleReceivedDate || "");
+    formData.append("sample_description", patient.sampleDescription || "");
+    formData.append("platform", patient.platform || "");
+    formData.append("data_type", patient.dataType || "");
+    formData.append("sample_file", patient.sampleFile || "");
+
+    // Existing required fields
     formData.append("specimen_collected_from", "TTSH Hospital");
+    formData.append("specimen_type", patient.specimenType || "Whole Blood");
     formData.append("specimen_id", `SP-${patient.sampleReferenceNumber}`);
     formData.append("specimen_received", dayjs().format("YYYY-MM-DD"));
     formData.append("test_information", "Pharmacogenomics Test");
     formData.append("lab_result_summary", "Batch uploaded lab test results");
+    formData.append("physician_name", patient.physicianName || "Unknown Physician");
     formData.append("reviewer_name", "System Generated");
+    formData.append("test_case_id", patient.sampleReferenceNumber);
+    formData.append("disease", patient.disease || "Not specified");
 
     // Debug info
     console.log("Sending data for patient:", patientName);
