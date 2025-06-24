@@ -9,6 +9,7 @@ const Login: React.FC = () => {
   const [error, setError] = useState("");
   const [form] = Form.useForm();
   const [rememberMe, setRememberMe] = useState(false);
+  
 
   // Updated handleLogin to accept form values directly
   const handleLogin = async (values: { email: string; password: string }) => {
@@ -27,7 +28,9 @@ const Login: React.FC = () => {
       
       if (!response.ok) throw new Error("Login failed");
       
-      const { token } = await response.json();
+      const { token, user } = await response.json();
+      localStorage.setItem("authToken", token);
+      localStorage.setItem("userName", user.username);
       localStorage.setItem("authToken", token);
       
       // Save email if remember me is checked
