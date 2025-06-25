@@ -47,6 +47,19 @@ interface PatientData {
   sampleFile?: string;
 }
 
+// interface LabTestResult {
+//   sampleReferenceNumber: string;
+//   drugName: string;
+//   geneName: string;
+//   genoType: string;
+//   phenoType: string;
+//   drugResponseToxicity: string;
+//   drugResponseDosage: string;
+//   drugResponseEfficacy: string;
+//   evidence: string;
+//   clinicalAnnotation: string;
+// }
+
 interface LabTestResult {
   sampleReferenceNumber: string;
   drugName: string;
@@ -58,6 +71,11 @@ interface LabTestResult {
   drugResponseEfficacy: string;
   evidence: string;
   clinicalAnnotation: string;
+  pgxPanel?: Array<{
+    gene: string;
+    genotype: string;
+    phenotype: string;
+  }>;
 }
 
 interface BatchUploadData {
@@ -239,114 +257,224 @@ export const BatchUpload: React.FC = () => {
   };
 
   // Handle Lab Test Results File (TXT)
+  // const handleLabResultFileUpload = async (file: File) => {
+  //   try {
+  //     const text = await file.text();
+  //     const lines = text.split('\n');
+  //     const labResultData: LabTestResult[] = [];
+
+  //     // Debug: Log the first few lines of the file
+  //     console.log("TXT file first lines:", lines.slice(0, 5));
+
+  //     // Assuming the first line is headers
+  //     const headers = lines[0].trim().split('\t');
+  //     console.log("TXT headers:", headers);
+      
+  //     // Map header indexes
+  //     const headerIndexes: Record<string, number> = {};
+  //     headers.forEach((header, index) => {
+  //       const normalizedHeader = header.trim().toLowerCase().replace(/\s+/g, '');
+  //       headerIndexes[normalizedHeader] = index;
+  //       console.log(`Header "${header}" normalized to "${normalizedHeader}" at index ${index}`);
+  //     });
+
+  //     // Find the sample reference number column index with more flexible matching
+  //     // Expand possible sample reference header matches
+  //     const possibleSampleRefHeaders = [
+  //       'samplereferencenumber', 'samplerefno', 'sampleid', 'sample', 'samplenumber', 'referencenumber',
+  //       'sample.samplereferencenumber', 'sample_reference_number'
+  //     ];
+      
+  //     let sampleRefIndex = -1;
+  //     for (const possibleHeader of possibleSampleRefHeaders) {
+  //       const foundIndex = Object.keys(headerIndexes).findIndex(h => h.includes(possibleHeader));
+  //       if (foundIndex >= 0) {
+  //         sampleRefIndex = headerIndexes[Object.keys(headerIndexes)[foundIndex]];
+  //         console.log(`Found sample reference column at index ${sampleRefIndex} with header ${Object.keys(headerIndexes)[foundIndex]}`);
+  //         break;
+  //       }
+  //     }
+      
+  //     if (sampleRefIndex === -1) {
+  //       sampleRefIndex = 0; // Default to first column if not found
+  //       console.log("No sample reference column found, defaulting to first column");
+  //     }
+
+  //     // Parse data rows
+  //     for (let i = 1; i < lines.length; i++) {
+  //       const line = lines[i].trim();
+  //       if (line) {
+  //         const columns = line.split('\t');
+          
+  //         // Get the sample reference number with trimming to remove whitespace
+  //         const sampleRef = columns[sampleRefIndex] ? columns[sampleRefIndex].trim() : '';
+          
+  //         // Skip header rows that might be repeated in the file
+  //         if (sampleRef === 'Sample Reference Number' || !sampleRef) {
+  //           continue;
+  //         }
+          
+  //         console.log(`Line ${i}: Sample Ref = "${sampleRef}"`);
+          
+  //         // Get values using header indexes (with fallbacks)
+  //         const drugIndex = headerIndexes['drugname'] || headerIndexes['drug'] || 1;
+  //         const geneIndex = headerIndexes['genename'] || headerIndexes['gene'] || 2;
+  //         const genoTypeIndex = headerIndexes['genotype'] || 3;
+  //         const phenoTypeIndex = headerIndexes['phenotype'] || 4;
+  //         const toxicityIndex = headerIndexes['drugresponsetoxicity'] || headerIndexes['toxicity'] || 5;
+  //         const dosageIndex = headerIndexes['drugresponsedosage'] || headerIndexes['dosage'] || 6;
+  //         const efficacyIndex = headerIndexes['drugresponseefficacy'] || headerIndexes['efficacy'] || 7;
+  //         const evidenceIndex = headerIndexes['evidence'] || 8;
+  //         const clinicalAnnotationIndex = headerIndexes['clinicalannotation'] || 9;
+          
+  //         labResultData.push({
+  //           sampleReferenceNumber: sampleRef,
+  //           drugName: columns[drugIndex] || '',
+  //           geneName: columns[geneIndex] || '',
+  //           genoType: columns[genoTypeIndex] || '',
+  //           phenoType: columns[phenoTypeIndex] || '',
+  //           drugResponseToxicity: columns[toxicityIndex] || '',
+  //           drugResponseDosage: columns[dosageIndex] || '',
+  //           drugResponseEfficacy: columns[efficacyIndex] || '',
+  //           evidence: columns[evidenceIndex] || '',
+  //           clinicalAnnotation: columns[clinicalAnnotationIndex] || ''
+  //         });
+  //       }
+  //     }
+
+  //     console.log("Processed lab result data:", labResultData);
+      
+  //     // Filter out invalid rows
+  //     const validLabResults = labResultData.filter(item => 
+  //       item.sampleReferenceNumber && 
+  //       item.sampleReferenceNumber !== 'Sample Reference Number'
+  //     );
+      
+  //     console.log("Valid lab results:", validLabResults);
+
+  //     setBatchData(prev => ({
+  //       ...prev,
+  //       labResultFile: file,
+  //       labResultData: validLabResults,
+  //       validationErrors: []
+  //     }));
+
+  //     message.success(`Lab result file uploaded successfully. Found ${validLabResults.length} results.`);
+  //   } catch (error) {
+  //     console.error("Error parsing lab result file:", error);
+  //     message.error('Failed to parse lab result file');
+  //   }
+  // };
+
   const handleLabResultFileUpload = async (file: File) => {
-    try {
-      const text = await file.text();
-      const lines = text.split('\n');
-      const labResultData: LabTestResult[] = [];
+  try {
+    const text = await file.text();
+    const lines = text.split('\n');
+    const labResultData: LabTestResult[] = [];
 
-      // Debug: Log the first few lines of the file
-      console.log("TXT file first lines:", lines.slice(0, 5));
-
-      // Assuming the first line is headers
-      const headers = lines[0].trim().split('\t');
-      console.log("TXT headers:", headers);
-      
-      // Map header indexes
-      const headerIndexes: Record<string, number> = {};
-      headers.forEach((header, index) => {
-        const normalizedHeader = header.trim().toLowerCase().replace(/\s+/g, '');
-        headerIndexes[normalizedHeader] = index;
-        console.log(`Header "${header}" normalized to "${normalizedHeader}" at index ${index}`);
-      });
-
-      // Find the sample reference number column index with more flexible matching
-      // Expand possible sample reference header matches
-      const possibleSampleRefHeaders = [
-        'samplereferencenumber', 'samplerefno', 'sampleid', 'sample', 'samplenumber', 'referencenumber',
-        'sample.samplereferencenumber', 'sample_reference_number'
-      ];
-      
-      let sampleRefIndex = -1;
-      for (const possibleHeader of possibleSampleRefHeaders) {
-        const foundIndex = Object.keys(headerIndexes).findIndex(h => h.includes(possibleHeader));
-        if (foundIndex >= 0) {
-          sampleRefIndex = headerIndexes[Object.keys(headerIndexes)[foundIndex]];
-          console.log(`Found sample reference column at index ${sampleRefIndex} with header ${Object.keys(headerIndexes)[foundIndex]}`);
-          break;
-        }
-      }
-      
-      if (sampleRefIndex === -1) {
-        sampleRefIndex = 0; // Default to first column if not found
-        console.log("No sample reference column found, defaulting to first column");
-      }
-
-      // Parse data rows
-      for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (line) {
-          const columns = line.split('\t');
-          
-          // Get the sample reference number with trimming to remove whitespace
-          const sampleRef = columns[sampleRefIndex] ? columns[sampleRefIndex].trim() : '';
-          
-          // Skip header rows that might be repeated in the file
-          if (sampleRef === 'Sample Reference Number' || !sampleRef) {
-            continue;
-          }
-          
-          console.log(`Line ${i}: Sample Ref = "${sampleRef}"`);
-          
-          // Get values using header indexes (with fallbacks)
-          const drugIndex = headerIndexes['drugname'] || headerIndexes['drug'] || 1;
-          const geneIndex = headerIndexes['genename'] || headerIndexes['gene'] || 2;
-          const genoTypeIndex = headerIndexes['genotype'] || 3;
-          const phenoTypeIndex = headerIndexes['phenotype'] || 4;
-          const toxicityIndex = headerIndexes['drugresponsetoxicity'] || headerIndexes['toxicity'] || 5;
-          const dosageIndex = headerIndexes['drugresponsedosage'] || headerIndexes['dosage'] || 6;
-          const efficacyIndex = headerIndexes['drugresponseefficacy'] || headerIndexes['efficacy'] || 7;
-          const evidenceIndex = headerIndexes['evidence'] || 8;
-          const clinicalAnnotationIndex = headerIndexes['clinicalannotation'] || 9;
-          
-          labResultData.push({
-            sampleReferenceNumber: sampleRef,
-            drugName: columns[drugIndex] || '',
-            geneName: columns[geneIndex] || '',
-            genoType: columns[genoTypeIndex] || '',
-            phenoType: columns[phenoTypeIndex] || '',
-            drugResponseToxicity: columns[toxicityIndex] || '',
-            drugResponseDosage: columns[dosageIndex] || '',
-            drugResponseEfficacy: columns[efficacyIndex] || '',
-            evidence: columns[evidenceIndex] || '',
-            clinicalAnnotation: columns[clinicalAnnotationIndex] || ''
-          });
-        }
-      }
-
-      console.log("Processed lab result data:", labResultData);
-      
-      // Filter out invalid rows
-      const validLabResults = labResultData.filter(item => 
-        item.sampleReferenceNumber && 
-        item.sampleReferenceNumber !== 'Sample Reference Number'
-      );
-      
-      console.log("Valid lab results:", validLabResults);
-
-      setBatchData(prev => ({
-        ...prev,
-        labResultFile: file,
-        labResultData: validLabResults,
-        validationErrors: []
-      }));
-
-      message.success(`Lab result file uploaded successfully. Found ${validLabResults.length} results.`);
-    } catch (error) {
-      console.error("Error parsing lab result file:", error);
-      message.error('Failed to parse lab result file');
+    // Skip empty lines
+    const validLines = lines.filter(line => line.trim().length > 0);
+    
+    if (validLines.length < 3) {
+      throw new Error("Invalid file format: File must contain header rows and data");
     }
-  };
+    
+    // First line contains gene names
+    const geneNames = validLines[0].split('\t').map(name => name.trim()).filter(name => name);
+    console.log("Gene names:", geneNames);
+    
+    // Second line contains column headers
+    const columnHeaders = validLines[1].split('\t').map(header => header.trim());
+    console.log("Column headers:", columnHeaders);
+    
+    // Find Sample Reference Number column index
+    const sampleRefIndex = columnHeaders.findIndex(header => 
+      header.toLowerCase().includes('sample reference number'));
+    
+    if (sampleRefIndex === -1) {
+      throw new Error("Required column 'Sample Reference Number' not found");
+    }
+    
+    // Process data rows (third row onwards)
+    for (let i = 2; i < validLines.length; i++) {
+      const line = validLines[i].trim();
+      if (!line) continue;
+      
+      const columns = line.split('\t');
+      
+      // Get the sample reference number
+      const sampleRef = columns[sampleRefIndex]?.trim() || '';
+      if (!sampleRef || sampleRef === 'Sample Reference Number') continue;
+      
+      console.log(`Processing sample: ${sampleRef}`);
+      
+      // Create a new lab result entry
+      const labResult: LabTestResult = {
+        sampleReferenceNumber: sampleRef,
+        drugName: '',
+        geneName: '',
+        genoType: '',
+        phenoType: '',
+        drugResponseToxicity: '',
+        drugResponseDosage: '',
+        drugResponseEfficacy: '',
+        evidence: '',
+        clinicalAnnotation: '',
+        // Add PGX panel data as an array of gene objects
+        pgxPanel: []
+      };
+      
+      // Extract all genes and their data
+      let currentIdx = 0;
+      for (let j = 0; j < geneNames.length; j++) {
+        const geneName = geneNames[j];
+        if (!geneName) continue;
+        
+        // Each gene has multiple columns (typically Genotype, phenotype, etc.)
+        // Find how many columns this gene has by looking at the next gene's position
+        const nextGeneIdx = geneNames.findIndex((g, idx) => idx > j && g);
+        const columnsPerGene = nextGeneIdx > -1 ? 
+          (nextGeneIdx - j) : 
+          Math.min(3, columnHeaders.length - currentIdx); // Default to 3 columns if it's the last gene
+        
+        // Extract genotype and phenotype
+        const genotypeIdx = currentIdx + 1; // First column after gene name is typically genotype
+        const phenotypeIdx = currentIdx + 2; // Second column is typically phenotype
+        
+        if (genotypeIdx < columns.length && phenotypeIdx < columns.length) {
+          const genotype = columns[genotypeIdx]?.trim() || '';
+          const phenotype = columns[phenotypeIdx]?.trim() || '';
+          
+          if (genotype || phenotype) {
+            labResult.pgxPanel?.push({
+              gene: geneName,
+              genotype: genotype,
+              phenotype: phenotype
+            });
+          }
+        }
+        
+        currentIdx += columnsPerGene;
+      }
+      
+      labResultData.push(labResult);
+    }
+
+    console.log("Processed lab result data with PGX panel:", labResultData);
+    
+    setBatchData(prev => ({
+      ...prev,
+      labResultFile: file,
+      labResultData: labResultData,
+      validationErrors: []
+    }));
+
+    message.success(`Lab result file uploaded successfully. Found ${labResultData.length} results.`);
+  } catch (error) {
+    console.error("Error parsing lab result file:", error);
+    message.error(`Failed to parse lab result file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
 
   // Validate and Match Data
   const validateAndMatchData = () => {
@@ -444,7 +572,7 @@ export const BatchUpload: React.FC = () => {
           }
         };
   // Process a single record
-const processSingleRecord = async (patient: PatientData, labResults: LabTestResult[]) => {
+  const processSingleRecord = async (patient: PatientData, labResults: LabTestResult[]) => {
   try {
     // Map lab results to the format expected by generateReportBlob
     const testResults = labResults.map(result => ({
@@ -462,6 +590,7 @@ const processSingleRecord = async (patient: PatientData, labResults: LabTestResu
     if (!token) {
       throw new Error("Authentication token not found. Please login again.");
     }
+    const pgxPanel = labResults[0]?.pgxPanel || [];
     
     // Better patient name handling: combine first and last name properly
     let patientName = patient.patientName || '';
@@ -474,6 +603,21 @@ const processSingleRecord = async (patient: PatientData, labResults: LabTestResu
     
     // Pastikan sex tidak kosong - default ke 'Male'
     const sex = patient.sex || "Male";
+
+    // Add additional genes from individual lab results if they have geneName/genoType/phenoType
+    labResults.forEach(result => {
+      if (result.geneName && result.genoType) {
+        // Check if this gene is already in pgxPanel
+        const exists = pgxPanel.some(p => p.gene === result.geneName);
+        if (!exists) {
+          pgxPanel.push({
+            gene: result.geneName,
+            genotype: result.genoType,
+            phenotype: result.phenoType
+          });
+        }
+      }
+    });
 
      // Convert dates properly
     const dateOfBirth = convertExcelDate(patient.dateOfBirth || '');
@@ -495,34 +639,62 @@ const processSingleRecord = async (patient: PatientData, labResults: LabTestResu
 
     // Format data for report
    // Format data for report
-    const reportData = {
-      patient: {
-        "Patient Name": patientName,
-        "Date of Birth": dateOfBirth || currentDate,
-        Sex: sex,
-        MRN: patient.mrn || `MRN-${patient.sampleReferenceNumber}`,
-        Ethnicity: patient.ethnicity || "N/A",
-      },
+    // const reportData = {
+    //   patient: {
+    //     "Patient Name": patientName,
+    //     "Date of Birth": dateOfBirth || currentDate,
+    //     Sex: sex,
+    //     MRN: patient.mrn || `MRN-${patient.sampleReferenceNumber}`,
+    //     Ethnicity: patient.ethnicity || "N/A",
+    //   },
       
-      specimen: {
-        "Specimen Type": patient.specimenType || "Whole Blood",
-        "Specimen ID": `SP-${patient.sampleReferenceNumber}`,
-        "Specimen Collected": "TTSH Hospital",
-        "Specimen Received": dayjs().format("YYYY-MM-DD"),
-      },
-      orderedBy: {
-        Requester: "TTSH Hospital",
-        Physician: patient.physicianName || "Unknown Physician",
-      },
-      caseInfo: {
-        "Test Case ID": patient.sampleReferenceNumber,
-        "Review Status": "Final",
-        "Date Accessioned": dayjs().format("YYYY-MM-DD"),
-        "Date Reported": dayjs().format("YYYY-MM-DD"),
-      },
-      test_information: "Pharmacogenomics Test",
-      lab_result_summary: "Batch uploaded lab test results",
-      testResults: uniqueTestResults,
+    //   specimen: {
+    //     "Specimen Type": patient.specimenType || "Whole Blood",
+    //     "Specimen ID": `SP-${patient.sampleReferenceNumber}`,
+    //     "Specimen Collected": "TTSH Hospital",
+    //     "Specimen Received": dayjs().format("YYYY-MM-DD"),
+    //   },
+    //   orderedBy: {
+    //     Requester: "TTSH Hospital",
+    //     Physician: patient.physicianName || "Unknown Physician",
+    //   },
+    //   caseInfo: {
+    //     "Test Case ID": patient.sampleReferenceNumber,
+    //     "Review Status": "Final",
+    //     "Date Accessioned": dayjs().format("YYYY-MM-DD"),
+    //     "Date Reported": dayjs().format("YYYY-MM-DD"),
+    //   },
+    //   test_information: "Pharmacogenomics Test",
+    //   lab_result_summary: "Batch uploaded lab test results",
+    //   testResults: uniqueTestResults,
+    // };
+
+      const reportData = {
+      // Standard fields expected by PDF generator
+      labAccessionNo: patient.sampleReferenceNumber || '',
+      name: patientName,
+      nric: patient.idNumber || '',
+      dob: dateOfBirth || '',
+      requestedBy: patient.physicianName || 'Unknown Physician',
+      comments: patient.clinicalNotes || '',
+      
+      location: patient.requester || 'TTSH',
+      race: patient.ethnicity || '',
+      sex: sex,
+      age: patient.patientAgeGroup || '',
+      dateReceived: sampleReceivedDate || dayjs().format("YYYY-MM-DD"),
+      dateReport: dayjs().format("YYYY-MM-DD"),
+      
+      // Additional fields from batch upload
+      patientIdType: patient.patientIdType || '',
+      patientContactNumber: patient.patientContactNumber || '',
+      patientAddress: patient.patientAddress || '',
+      patientPopulation: patient.patientPopulation || '',
+      patientBodyWeight: patient.patientBodyWeight || '',
+      sampleDescription: patient.sampleDescription || '',
+      
+      // PGX panel data
+      pgxPanel: pgxPanel,
     };
 
     // Generate PDF blob

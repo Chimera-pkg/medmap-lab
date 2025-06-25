@@ -196,12 +196,18 @@ async function generatePDF(data: any) {
 
     // Left column - Patient Demographics
     const leftInfo = [
-      { label: "Lab Accession No", value: data.labAccessionNo || "-" },
+      {
+        label: "Lab Accession No",
+        value: data.labAccessionNo || data.sampleReferenceNumber || "-",
+      },
       { label: "Name", value: data.name || "-" },
-      { label: "NRIC", value: data.nric || "-" },
+      { label: "NRIC", value: data.nric || data.idNumber || "-" },
       { label: "DOB", value: data.dob || "-" },
-      { label: "Requested By", value: data.requestedBy || "-" },
-      { label: "Comments", value: data.comments || "-" },
+      {
+        label: "Requested By",
+        value: data.requester || "-",
+      },
+      { label: "Comments", value: data.comments || data.clinicalNotes || "-" },
     ];
 
     let leftColumnY = yPos;
@@ -238,11 +244,14 @@ async function generatePDF(data: any) {
     // Right column - Additional Info
     const rightColumnX = leftMargin + columnWidth + 20;
     const rightInfo = [
-      { label: "Location", value: data.location || "-" },
-      { label: "Race", value: data.race || "-" },
+      { label: "Location", value: data.location || data.requester || "-" },
+      { label: "Race", value: data.race || data.ethnicity || "-" },
       { label: "Sex", value: data.sex || "-" },
-      { label: "Age", value: data.age || "-" },
-      { label: "Date Received", value: data.dateReceived || "-" },
+      { label: "Age", value: data.age || data.patientAgeGroup || "-" },
+      {
+        label: "Date Received",
+        value: data.dateReceived || data.sampleReceivedDate || "-",
+      },
       { label: "Date Report", value: data.dateReport || "-" },
     ];
 
@@ -426,10 +435,10 @@ async function generatePDF(data: any) {
     }
   }
 
-  yPos -= 30;
+  yPos -= 20;
 
-  // === FOOTER SECTION ===
-  ensureSpace(80);
+  // // === FOOTER SECTION ===
+  // ensureSpace(80);
 
   // Material Submitted
   page.drawText("Material Submitted: Blood (EDTA)", {
@@ -580,7 +589,7 @@ async function generatePDF(data: any) {
     "Dr Goh Lui Ling, Senior Principal Scientific Officer",
   ];
 
-  signatories.forEach((signatory) => {
+  signatories.forEach((signatory: string) => {
     page.drawText(signatory, {
       x: leftMargin,
       y: yPos,
