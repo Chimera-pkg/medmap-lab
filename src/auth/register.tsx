@@ -1,13 +1,16 @@
 import React, { useState } from "react";
 import { UserOutlined, LockOutlined, MailOutlined, EyeTwoTone, EyeInvisibleOutlined } from "@ant-design/icons";
 import { API_URL } from "../config";
-import { Alert, Button, Form, Input, notification } from "antd";
-import { Link } from "react-router-dom";
+import { Alert, Button, Form, Input, notification, Modal, Spin, Result } from "antd";
+import { Link, useNavigate } from "react-router-dom";
 
 const Register: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [form] = Form.useForm();
+  const [registerSuccess, setRegisterSuccess] = useState(false);
+  const [countdown, setCountdown] = useState(5);
+  const navigate = useNavigate();
 
   const handleRegister = async (values: { 
     username: string; 
@@ -41,14 +44,29 @@ const Register: React.FC = () => {
         throw new Error(errorData.message || "Registration failed");
       }
       
-      notification.success({
-        message: "Registration Successful",
-        description: "Your account has been created successfully. You can now log in.",
-        duration: 3
-      });
+      const userData = await response.json();
       
-      // Redirect to login page
-      window.location.href = "/login";
+      // Store registration info temporarily
+      localStorage.setItem("justRegistered", "true");
+      localStorage.setItem("registeredEmail", values.email);
+      
+      // Show success UI
+      setRegisterSuccess(true);
+      
+      // Start countdown for redirect
+      let secondsLeft = 5;
+      setCountdown(secondsLeft);
+      
+      const timer = setInterval(() => {
+        secondsLeft -= 1;
+        setCountdown(secondsLeft);
+        
+        if (secondsLeft <= 0) {
+          clearInterval(timer);
+          navigate("/login");
+        }
+      }, 1000);
+      
     } catch (err: any) {
       console.error("Registration error:", err);
       setError(err.message || "Registration failed. Please try again.");
@@ -56,6 +74,34 @@ const Register: React.FC = () => {
       setLoading(false);
     }
   };
+
+  if (registerSuccess) {
+    return (
+      <div className="min-h-screen flex justify-center items-center bg-gray-50">
+        <Result
+          status="success"
+          title="Registration Successful!"
+          subTitle={
+            <div>
+              <p>Your account has been created successfully.</p>
+              <p>You will be redirected to the login page in {countdown} seconds...</p>
+              <p>Please use your email and password to log in.</p>
+            </div>
+          }
+          extra={[
+            <Button 
+              type="primary" 
+              key="login"
+              onClick={() => navigate("/login")}
+              style={{ background: "#A51424", borderColor: "#A51424" }}
+            >
+              Log in now
+            </Button>
+          ]}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex">
@@ -97,7 +143,7 @@ const Register: React.FC = () => {
             size="large"
             scrollToFirstError
           >
-            {/* Full Name */}
+            {/* Form items remain the same */}
             <Form.Item
               name="username"
               label="Full Name"
