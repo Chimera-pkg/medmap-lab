@@ -1,10 +1,11 @@
 import { List, useTable, EditButton, ShowButton } from "@refinedev/antd";
-import { Table, Space, Checkbox, Button, Modal, message } from "antd";
+import { Table, Space, Checkbox, Button, Modal, message, Input } from "antd";
 import moment from "moment";
 import { API_URL } from "../../config";
-import { DeleteOutlined, FilePdfOutlined, FileTextOutlined, EyeOutlined } from "@ant-design/icons";
-import React, { useState } from "react";
+import { DeleteOutlined, FilePdfOutlined, FileTextOutlined, EyeOutlined, SearchOutlined } from "@ant-design/icons";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { CrudFilters } from "@refinedev/core";
 
 interface ILabTest {
   id: number;
@@ -16,7 +17,6 @@ interface ILabTest {
   report_status: string;
   report_download_pdf: string;
   report_download_hl7: string;
-  // New fields
   patient_age_group?: string;
   patient_super_population?: string;
   patient_population?: string;
@@ -47,13 +47,73 @@ interface ILabTest {
 }
 
 export const PostList = () => {
-  // Gunakan tableQueryResult untuk refetch
-  const { tableProps, tableQueryResult } = useTable<ILabTest>({
-    resource: "lab-tests",
-  });
-  const navigate = useNavigate();
+  // State for search functionality
+  const [searchText, setSearchText] = useState<string>("");
 
+   const filters: CrudFilters = searchText ? [
+    {
+      field: "test_request_reference_number",
+      operator: "eq", // exact match
+      value: searchText,
+    }
+  ] : [];
+  
+  // Use useTable with proper filter configuration
+  const { tableProps, tableQueryResult, setFilters } = useTable<ILabTest>({
+    resource: "lab-tests",
+    filters: {
+      permanent: filters
+    }
+  });
+
+  const navigate = useNavigate();
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([]);
+
+  // Debounced search function to avoid too many API calls
+   // Debounced search function to avoid too many API calls
+  const debouncedSearch = useCallback(
+    (() => {
+      let timeoutId: NodeJS.Timeout;
+      return (value: string) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          // Set filters based on search text
+          const newFilters: CrudFilters = value ? [
+            {
+              field: "test_request_reference_number",
+              operator: "eq",
+              value: value,
+            }
+          ] : [];
+          
+          setFilters(newFilters);
+        }, 300); // 300ms delay
+      };
+    })(),
+    [setFilters]
+  );
+
+  // Update search when searchText changes
+  useEffect(() => {
+    debouncedSearch(searchText);
+  }, [searchText, debouncedSearch]);
+
+  // Debug: Log current state
+  useEffect(() => {
+    console.log("Current searchText:", searchText);
+    console.log("Current table data count:", tableProps.dataSource?.length || 0);
+    console.log("Applied filters:", filters);
+  }, [searchText, tableProps.dataSource, filters]);
+
+  // Handle search input change
+  const handleSearch = (value: string) => {
+    setSearchText(value);
+  };
+
+  // Clear search
+  const handleClearSearch = () => {
+    setSearchText("");
+  };
 
   const handleDelete = (record: ILabTest) => {
     Modal.confirm({
@@ -168,24 +228,40 @@ export const PostList = () => {
 
   return (
     <List>
-      <Space style={{ marginBottom: 16 }}>
-        <Button
-          type="primary"
-          danger
-          icon={<DeleteOutlined />}
-          onClick={handleDeleteSelected}
-          disabled={selectedRowKeys.length === 0}
-        >
-          Delete Selected
-        </Button>
-      <Button
-          type="primary"
-          // icon={<UploadOutlined />}
-          onClick={() => navigate('/lab-tests/batch-upload')}
-          style={{ marginLeft: 8 }}
-        >
-          Batch Upload
-        </Button>
+      {/* Search Bar */}
+      <Space style={{ marginBottom: 16, width: '100%' }} direction="vertical">
+       <Input.Search
+          placeholder="Search by Test Request Reference Number (e.g., CR1062)..."
+          allowClear
+          enterButton={<SearchOutlined />}
+          size="large"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          onSearch={handleSearch}
+          onClear={handleClearSearch}
+          style={{ maxWidth: 600 }}
+        />
+        
+        {/* Action Buttons */}
+        <Space>
+          <Button
+            type="primary"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={handleDeleteSelected}
+            disabled={selectedRowKeys.length === 0}
+          >
+            Delete Selected
+          </Button>
+          <Button
+            type="primary"
+            // icon={<UploadOutlined />}
+            onClick={() => navigate('/lab-tests/batch-upload')}
+            style={{ marginLeft: 8 }}
+          >
+            Batch Upload
+          </Button>
+        </Space>
       </Space>
       <Table
         {...tableProps}
