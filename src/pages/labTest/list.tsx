@@ -61,15 +61,12 @@ export const PostList = () => {
   // Use useTable with proper filter configuration
   const { tableProps, tableQueryResult, setFilters } = useTable<ILabTest>({
     resource: "lab-tests",
-    filters: {
-      permanent: filters
-    }
+    
   });
 
   const navigate = useNavigate();
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([]);
 
-  // Debounced search function to avoid too many API calls
    // Debounced search function to avoid too many API calls
   const debouncedSearch = useCallback(
     (() => {
@@ -84,7 +81,7 @@ export const PostList = () => {
               operator: "eq",
               value: value,
             }
-          ] : [];
+          ] : []; // Empty array = no filters = show all data
           
           setFilters(newFilters);
         }, 300); // 300ms delay
@@ -102,17 +99,19 @@ export const PostList = () => {
   useEffect(() => {
     console.log("Current searchText:", searchText);
     console.log("Current table data count:", tableProps.dataSource?.length || 0);
-    console.log("Applied filters:", filters);
-  }, [searchText, tableProps.dataSource, filters]);
+    console.log("Is filtered:", searchText ? "Yes" : "No (showing all data)");
+  }, [searchText, tableProps.dataSource]);
 
   // Handle search input change
   const handleSearch = (value: string) => {
     setSearchText(value);
   };
 
-  // Clear search
+  // Clear search - this will show all data again
   const handleClearSearch = () => {
     setSearchText("");
+    // Immediately clear filters to show all data
+    setFilters([]);
   };
 
   const handleDelete = (record: ILabTest) => {
