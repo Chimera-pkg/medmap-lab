@@ -2,8 +2,8 @@ import { List, useTable, EditButton, ShowButton } from "@refinedev/antd";
 import { Table, Space, Checkbox, Button, Modal, message, Input } from "antd";
 import moment from "moment";
 import { API_URL } from "../../config";
-import { DeleteOutlined, FilePdfOutlined, FileTextOutlined, EyeOutlined, SearchOutlined } from "@ant-design/icons";
-import React, { useState, useEffect, useCallback } from "react";
+import { DeleteOutlined, FilePdfOutlined, FileTextOutlined, EyeOutlined, SearchOutlined, ReloadOutlined } from "@ant-design/icons";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { CrudFilters } from "@refinedev/core";
 
@@ -47,72 +47,129 @@ interface ILabTest {
 }
 
 export const PostList = () => {
-  // State for search functionality
   const [searchText, setSearchText] = useState<string>("");
-
-   const filters: CrudFilters = searchText ? [
-    {
-      field: "test_request_reference_number",
-      operator: "eq", // exact match
-      value: searchText,
-    }
-  ] : [];
-  
-  // Use useTable with proper filter configuration
   const { tableProps, tableQueryResult, setFilters } = useTable<ILabTest>({
     resource: "lab-tests",
-    
   });
 
   const navigate = useNavigate();
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([]);
+  
+  // Use ref to track if we're clearing the search to prevent debounced search from interfering
+  const isClearingRef = useRef(false);
 
-   // Debounced search function to avoid too many API calls
-  const debouncedSearch = useCallback(
-    (() => {
-      let timeoutId: NodeJS.Timeout;
-      return (value: string) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-          // Set filters based on search text
-          const newFilters: CrudFilters = value ? [
-            {
-              field: "test_request_reference_number",
-              operator: "eq",
-              value: value,
-            }
-          ] : []; // Empty array = no filters = show all data
+  // // Debounced search function to avoid too many API calls
+  // const debouncedSearch = useCallback(
+  //   (() => {
+  //     let timeoutId: NodeJS.Timeout;
+  //     return (value: string) => {
+  //       clearTimeout(timeoutId);
+  //       timeoutId = setTimeout(() => {
+  //         // Don't apply debounced search if we're in the middle of clearing
+  //         if (isClearingRef.current) {
+  //           isClearingRef.current = false;
+  //           return;
+  //         }
           
-          setFilters(newFilters);
-        }, 300); // 300ms delay
-      };
-    })(),
-    [setFilters]
-  );
+  //         // Set filters based on search text
+  //         const newFilters: CrudFilters = value ? [
+  //           {
+  //             field: "test_request_reference_number",
+  //             operator: "eq",
+  //             value: value,
+  //           }
+  //         ] : []; // Empty array = no filters = show all data
+          
+  //         console.log("Debounced search applying filters:", newFilters);
+  //         setFilters(newFilters);
+  //       }, 300); // 300ms delay
+  //     };
+  //   })(),
+  //   [setFilters]
+  // );
 
-  // Update search when searchText changes
-  useEffect(() => {
-    debouncedSearch(searchText);
-  }, [searchText, debouncedSearch]);
+  // // Update search when searchText changes, but only if we're not clearing
+  // useEffect(() => {
+  //   if (!isClearingRef.current) {
+  //     debouncedSearch(searchText);
+  //   }
+  // }, [searchText, debouncedSearch]);
 
-  // Debug: Log current state
-  useEffect(() => {
-    console.log("Current searchText:", searchText);
-    console.log("Current table data count:", tableProps.dataSource?.length || 0);
-    console.log("Is filtered:", searchText ? "Yes" : "No (showing all data)");
-  }, [searchText, tableProps.dataSource]);
+  // // Debug: Log current state
+  // useEffect(() => {
+  //   console.log("Current searchText:", searchText);
+  //   console.log("Current table data count:", tableProps.dataSource?.length || 0);
+  //   console.log("Is filtered:", searchText ? "Yes" : "No (showing all data)");
+  // }, [searchText, tableProps.dataSource]);
 
-  // Handle search input change
-  const handleSearch = (value: string) => {
-    setSearchText(value);
-  };
+  // // Handle search input change and immediate search execution
+  // const handleSearch = (value: string) => {
+  //   console.log("handleSearch called with value:", value);
+  //   isClearingRef.current = false; // Reset clearing flag
+  //   setSearchText(value);
+    
+  //   // Immediately apply filters when search button is clicked
+  //   const newFilters: CrudFilters = value ? [
+  //     {
+  //       field: "test_request_reference_number",
+  //       operator: "eq",
+  //       value: value,
+  //     }
+  //   ] : []; // Empty filters = default list
+    
+  //   console.log("handleSearch applying filters:", newFilters);
+  //   setFilters(newFilters);
+  // };
 
-  // Clear search - this will show all data again
-  const handleClearSearch = () => {
-    setSearchText("");
-    // Immediately clear filters to show all data
-    setFilters([]);
-  };
+  // // Enhanced clear search function
+  // const handleClearSearch = () => {
+  //   console.log("handleClearSearch triggered");
+    
+  //   // Set the clearing flag to prevent debounced search from interfering
+  //   isClearingRef.current = true;
+    
+  //   // Clear search text immediately
+  //   setSearchText("");
+    
+  //   // Clear filters immediately - this should return to default list
+  //   console.log("Clearing filters to show all data");
+  //   setFilters([]);
+    
+  //   // Force a small delay to ensure the state updates are processed
+  //   setTimeout(() => {
+  //     console.log("Clear operation completed");
+  //     isClearingRef.current = false;
+  //   }, 100);
+  // };
+
+  // // Handle reload all data
+  // const handleReloadData = () => {
+  //   console.log("Reload button clicked - reloading all lab test data");
+    
+  //   // Set clearing flag to prevent interference
+  //   isClearingRef.current = true;
+    
+  //   // Clear search text
+  //   setSearchText("");
+    
+  //   // Clear all filters to show all data
+  //   setFilters([]);
+    
+  //   // Clear selected rows
+  //   setSelectedRowKeys([]);
+    
+  //   // Force refetch from API
+  //   tableQueryResult.refetch();
+    
+  //   // Reset clearing flag
+  //   setTimeout(() => {
+  //     isClearingRef.current = false;
+  //   }, 100);
+    
+  //   message.success("Lab test data reloaded successfully");
+  //   console.log("All lab test data reloaded from API");
+  // };
+
 
   const handleDelete = (record: ILabTest) => {
     Modal.confirm({
@@ -229,7 +286,7 @@ export const PostList = () => {
     <List>
       {/* Search Bar */}
       <Space style={{ marginBottom: 16, width: '100%' }} direction="vertical">
-       <Input.Search
+       {/* <Input.Search
           placeholder="Search by Test Request Reference Number (e.g., CR1062)..."
           allowClear
           enterButton={<SearchOutlined />}
@@ -240,6 +297,16 @@ export const PostList = () => {
           onClear={handleClearSearch}
           style={{ maxWidth: 600 }}
         />
+         <Button
+            type="default"
+            icon={<ReloadOutlined />}
+            onClick={handleReloadData}
+            loading={tableQueryResult.isRefetching || tableQueryResult.isLoading}
+            size="large"
+            title="Reload all lab test data"
+          >
+            {tableQueryResult.isRefetching ? 'Reloading...' : 'Reload'}
+          </Button> */}
         
         {/* Action Buttons */}
         <Space>
