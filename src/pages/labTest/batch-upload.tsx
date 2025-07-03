@@ -366,7 +366,7 @@ export const BatchUpload: React.FC = () => {
   //   }
   // };
 
-  const handleLabResultFileUpload = async (file: File) => {
+ const handleLabResultFileUpload = async (file: File) => {
   try {
     const text = await file.text();
     const lines = text.split('\n');
@@ -394,27 +394,85 @@ export const BatchUpload: React.FC = () => {
     if (sampleRefIndex === -1) {
       throw new Error("Required column 'Sample Reference Number' not found");
     }
-    
-    // Define the gene mapping based on your TXT file structure
-    // This mapping corresponds to the exact column positions in your file
-    const geneMapping = [
-      { gene: 'ABCG2', genotypeCol: 1, phenotypeCol: 2 },
-      { gene: 'CYP2C19', genotypeCol: 3, phenotypeCol: 4 },
-      { gene: 'CYP2C9', genotypeCol: 5, phenotypeCol: 6 },
-      { gene: 'CYP2D6', genotypeCol: 8, phenotypeCol: 9 }, // Skip Activity Score at col 7
-      { gene: 'CYP3A5', genotypeCol: 11, phenotypeCol: 12 }, // Skip Activity Score at col 10
-      { gene: 'CYP4F2', genotypeCol: 13, phenotypeCol: 14 },
-      { gene: 'DPYD', genotypeCol: 15, phenotypeCol: 16 }, // Skip Activity Score at col 17
-      { gene: 'HLA-A*31:01', genotypeCol: 18, phenotypeCol: 19 },
-      { gene: 'HLA-B*15:02', genotypeCol: 20, phenotypeCol: 21 },
-      { gene: 'HLA-B*57:01', genotypeCol: 22, phenotypeCol: 23 },
-      { gene: 'HLA-B*58:01', genotypeCol: 24, phenotypeCol: 25 },
-      { gene: 'NUDT15', genotypeCol: 26, phenotypeCol: 27 }, // Skip Activity Score at col 28
-      { gene: 'SLCO1B1', genotypeCol: 29, phenotypeCol: 30 },
-      { gene: 'TPMT', genotypeCol: 31, phenotypeCol: 32 },
-      { gene: 'UGT1A1', genotypeCol: 33, phenotypeCol: 34 },
-      { gene: 'VKORC1', genotypeCol: 35, phenotypeCol: 36 }
-    ];
+
+    // Function to normalize genotype and phenotype
+    const normalizeGenotypeAndPhenotype = (rawGenotype: string, rawPhenotype: string) => {
+      // Function mapping for genotype normalization
+      const functionToGenotype: Record<string, string> = {
+        'normal function': '*1/*1',
+        'poor function': '*2/*2',
+        'intermediate function': '*1/*2',
+        'decreased function': '*1/*3',
+        'increased function': '*1/*17',
+        'ultrarapid function': '*1xN/*1',
+        'no function': '*3/*3'
+      };
+
+      // Function mapping for phenotype normalization
+      const functionToPhenotype: Record<string, string> = {
+        'normal function': 'Normal metabolizer',
+        'poor function': 'Poor metabolizer',
+        'intermediate function': 'Intermediate metabolizer',
+        'decreased function': 'Intermediate metabolizer',
+        'increased function': 'Rapid metabolizer',
+        'ultrarapid function': 'Ultrarapid metabolizer',
+        'no function': 'Poor metabolizer'
+      };
+
+      // Metabolizer terms that should not be in genotype
+      const metabolizerTerms = [
+        'normal metabolizer', 'poor metabolizer', 'intermediate metabolizer',
+        'rapid metabolizer', 'ultrarapid metabolizer', 'slow metabolizer'
+      ];
+
+      let normalizedGenotype = rawGenotype.trim();
+      let normalizedPhenotype = rawPhenotype.trim();
+
+      // Skip if genotype contains metabolizer terms - don't include these entries
+      const lowerGenotype = normalizedGenotype.toLowerCase();
+      if (metabolizerTerms.some(term => lowerGenotype.includes(term))) {
+        console.warn(`Skipping entry with metabolizer in genotype: ${normalizedGenotype}`);
+        return null; // Skip this entry completely
+      }
+
+      // Check if genotype contains function description
+      const genoLower = normalizedGenotype.toLowerCase();
+      if (functionToGenotype[genoLower]) {
+        normalizedGenotype = functionToGenotype[genoLower];
+        // If phenotype is empty or also contains function, normalize it
+        if (!normalizedPhenotype || normalizedPhenotype.toLowerCase().includes('function')) {
+          normalizedPhenotype = functionToPhenotype[genoLower];
+        }
+      }
+
+      // Check if phenotype contains function description
+      const phenoLower = normalizedPhenotype.toLowerCase();
+      if (functionToPhenotype[phenoLower]) {
+        normalizedPhenotype = functionToPhenotype[phenoLower];
+        // If genotype is empty or also contains function, normalize it
+        if (!normalizedGenotype || normalizedGenotype.toLowerCase().includes('function')) {
+          normalizedGenotype = functionToGenotype[phenoLower];
+        }
+      }
+
+      // Special handling for HLA genes (they typically have different patterns)
+      if (normalizedGenotype.includes('Positive') || normalizedGenotype.includes('Negative')) {
+        // For HLA, keep the original values
+        normalizedGenotype = rawGenotype.trim();
+        normalizedPhenotype = rawPhenotype.trim();
+      }
+
+      // Final validation: ensure we have valid genotype
+      if (!normalizedGenotype || normalizedGenotype === '') {
+        console.warn(`Skipping entry with empty genotype`);
+        return null;
+      }
+
+      return {
+        genotype: normalizedGenotype,
+        phenotype: normalizedPhenotype
+      };
+    };
     
     // Process data rows (third row onwards)
     for (let i = 2; i < validLines.length; i++) {
@@ -441,72 +499,96 @@ export const BatchUpload: React.FC = () => {
         drugResponseEfficacy: '',
         evidence: '',
         clinicalAnnotation: '',
+        // Add PGX panel data as an array of gene objects
         pgxPanel: []
       };
       
-      // Extract gene data using the defined mapping
-      geneMapping.forEach(geneInfo => {
-        if (geneInfo.genotypeCol < columns.length && geneInfo.phenotypeCol < columns.length) {
-          const genotype = columns[geneInfo.genotypeCol]?.trim() || '';
-          const phenotype = columns[geneInfo.phenotypeCol]?.trim() || '';
+      // Extract all genes and their data
+      let currentIdx = 0;
+      for (let j = 0; j < geneNames.length; j++) {
+        const geneName = geneNames[j];
+        if (!geneName) continue;
+        
+        // Skip the first column (Sample Reference Number)
+        if (currentIdx === 0) {
+          currentIdx = 1; // Start from column 1
+        }
+        
+        // Find how many columns this gene has by looking at column headers
+        let genotypeIdx = -1;
+        let phenotypeIdx = -1;
+        
+        // Look for genotype and phenotype columns for this gene
+        for (let k = currentIdx; k < columnHeaders.length; k++) {
+          const header = columnHeaders[k].toLowerCase();
           
-          // Clean up genotype - remove extra text, keep only the core genotype
-          let cleanGenotype = genotype;
-          if (geneInfo.gene.startsWith('HLA-')) {
-            // For HLA genes, keep Positive/Negative as is
-            cleanGenotype = genotype;
-          } else {
-            // For other genes, extract only the genotype part (remove activity scores, etc.)
-            // Examples: "*1/*1", "421C/C", "*2/*2", etc.
-            const genotypeMatch = genotype.match(/^([*\w\/\-\.]+)/);
-            if (genotypeMatch) {
-              cleanGenotype = genotypeMatch[1];
-            }
+          // Skip activity score columns
+          if (header.includes('activity score')) {
+            continue;
           }
           
-          // Clean up phenotype - keep only the main phenotype description
-          let cleanPhenotype = phenotype;
-          if (geneInfo.gene.startsWith('HLA-')) {
-            // For HLA genes, use full descriptive text
-            cleanPhenotype = phenotype;
-          } else {
-            // For metabolizer genes, extract main phenotype
-            const phenotypePatterns = [
-              'Poor metabolizer',
-              'Intermediate metabolizer', 
-              'Normal metabolizer',
-              'Rapid metabolizer',
-              'Ultrarapid metabolizer',
-              'Poor function',
-              'Normal function',
-              'Increased function',
-              'High warfarin sensitivity',
-              'Low warfarin sensitivity',
-              'Normal warfarin sensitivity'
-            ];
-            
-            for (const pattern of phenotypePatterns) {
-              if (phenotype.includes(pattern)) {
-                cleanPhenotype = pattern;
-                break;
-              }
-            }
+          // Find genotype column
+          if (header.includes('genotype') && genotypeIdx === -1) {
+            genotypeIdx = k;
+          }
+          // Find phenotype column (but not activity score)
+          else if (header.includes('phenotype') && phenotypeIdx === -1) {
+            phenotypeIdx = k;
           }
           
-          if (cleanGenotype || cleanPhenotype) {
-            labResult.pgxPanel?.push({
-              gene: geneInfo.gene,
-              genotype: cleanGenotype,
-              phenotype: cleanPhenotype
-            });
+          // If we found both, break
+          if (genotypeIdx !== -1 && phenotypeIdx !== -1) {
+            break;
+          }
+          
+          // Stop if we hit the next gene
+          if (k > currentIdx && geneNames.some(g => g && columnHeaders[k].includes(g) && g !== geneName)) {
+            break;
           }
         }
-      });
+        
+        // Process the found columns
+        if (genotypeIdx !== -1 && phenotypeIdx !== -1 && 
+            genotypeIdx < columns.length && phenotypeIdx < columns.length) {
+          
+          const rawGenotype = columns[genotypeIdx]?.trim() || '';
+          const rawPhenotype = columns[phenotypeIdx]?.trim() || '';
+          
+          if (rawGenotype || rawPhenotype) {
+            // Normalize genotype and phenotype
+            const normalized = normalizeGenotypeAndPhenotype(rawGenotype, rawPhenotype);
+            
+            // Only add if normalization was successful (not null)
+            if (normalized && normalized.genotype) {
+              labResult.pgxPanel?.push({
+                gene: geneName,
+                genotype: normalized.genotype,
+                phenotype: normalized.phenotype
+              });
+
+              console.log(`Gene ${geneName}: ${rawGenotype} → ${normalized.genotype}, ${rawPhenotype} → ${normalized.phenotype}`);
+            } else {
+              console.log(`Skipped Gene ${geneName}: Invalid or filtered data (${rawGenotype}, ${rawPhenotype})`);
+            }
+          }
+        }
+        
+        // Move to next gene's columns
+        // Find where the next gene starts
+        let nextStartIdx = currentIdx + 1;
+        for (let k = currentIdx + 1; k < columnHeaders.length; k++) {
+          if (geneNames.some(g => g && columnHeaders[k] === 'Genotype' && k > currentIdx)) {
+            nextStartIdx = k;
+            break;
+          }
+        }
+        currentIdx = nextStartIdx;
+      }
       
       labResultData.push(labResult);
     }
 
-    console.log("Processed lab result data with cleaned PGX panel:", labResultData);
+    console.log("Processed lab result data with PGX panel:", labResultData);
     
     setBatchData(prev => ({
       ...prev,
@@ -521,7 +603,6 @@ export const BatchUpload: React.FC = () => {
     message.error(`Failed to parse lab result file: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
-
   // Validate and Match Data
   const validateAndMatchData = () => {
     const { patientData, labResultData } = batchData;
@@ -683,6 +764,37 @@ export const BatchUpload: React.FC = () => {
       );
     });
 
+    // Format data for report
+   // Format data for report
+    // const reportData = {
+    //   patient: {
+    //     "Patient Name": patientName,
+    //     "Date of Birth": dateOfBirth || currentDate,
+    //     Sex: sex,
+    //     MRN: patient.mrn || `MRN-${patient.sampleReferenceNumber}`,
+    //     Ethnicity: patient.ethnicity || "N/A",
+    //   },
+      
+    //   specimen: {
+    //     "Specimen Type": patient.specimenType || "Whole Blood",
+    //     "Specimen ID": `SP-${patient.sampleReferenceNumber}`,
+    //     "Specimen Collected": "TTSH Hospital",
+    //     "Specimen Received": dayjs().format("YYYY-MM-DD"),
+    //   },
+    //   orderedBy: {
+    //     Requester: "TTSH Hospital",
+    //     Physician: patient.physicianName || "Unknown Physician",
+    //   },
+    //   caseInfo: {
+    //     "Test Case ID": patient.sampleReferenceNumber,
+    //     "Review Status": "Final",
+    //     "Date Accessioned": dayjs().format("YYYY-MM-DD"),
+    //     "Date Reported": dayjs().format("YYYY-MM-DD"),
+    //   },
+    //   test_information: "Pharmacogenomics Test",
+    //   lab_result_summary: "Batch uploaded lab test results",
+    //   testResults: uniqueTestResults,
+    // };
 
       const reportData = {
       // Standard fields expected by PDF generator
