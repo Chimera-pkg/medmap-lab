@@ -764,38 +764,6 @@ export const BatchUpload: React.FC = () => {
       );
     });
 
-    // Format data for report
-   // Format data for report
-    // const reportData = {
-    //   patient: {
-    //     "Patient Name": patientName,
-    //     "Date of Birth": dateOfBirth || currentDate,
-    //     Sex: sex,
-    //     MRN: patient.mrn || `MRN-${patient.sampleReferenceNumber}`,
-    //     Ethnicity: patient.ethnicity || "N/A",
-    //   },
-      
-    //   specimen: {
-    //     "Specimen Type": patient.specimenType || "Whole Blood",
-    //     "Specimen ID": `SP-${patient.sampleReferenceNumber}`,
-    //     "Specimen Collected": "TTSH Hospital",
-    //     "Specimen Received": dayjs().format("YYYY-MM-DD"),
-    //   },
-    //   orderedBy: {
-    //     Requester: "TTSH Hospital",
-    //     Physician: patient.physicianName || "Unknown Physician",
-    //   },
-    //   caseInfo: {
-    //     "Test Case ID": patient.sampleReferenceNumber,
-    //     "Review Status": "Final",
-    //     "Date Accessioned": dayjs().format("YYYY-MM-DD"),
-    //     "Date Reported": dayjs().format("YYYY-MM-DD"),
-    //   },
-    //   test_information: "Pharmacogenomics Test",
-    //   lab_result_summary: "Batch uploaded lab test results",
-    //   testResults: uniqueTestResults,
-    // };
-
       const reportData = {
       // Standard fields expected by PDF generator
       labAccessionNo: patient.sampleReferenceNumber || '',
@@ -833,14 +801,27 @@ export const BatchUpload: React.FC = () => {
       date_of_birth: patient.dateOfBirth || dayjs().format("YYYY-MM-DD"),
       sex: sex, // Gunakan nilai sex yang sudah dipastikan
       mrn: patient.mrn || `MRN-${patient.sampleReferenceNumber}`,
+      id_number: patient.idNumber || "",
+      patient_address: patient.patientAddress || "",
+      patient_contact_number: patient.patientContactNumber || "",
       test_case_id: patient.sampleReferenceNumber,
       specimen_type: patient.specimenType || "Whole Blood",
-      specimen_id: `SP-${patient.sampleReferenceNumber}`,
-      specimen_collected_from: "TTSH Hospital",
-      specimen_received: dayjs().format("YYYY-MM-DD"),
-      test_information: "Pharmacogenomics Test",
-      lab_result_summary: "Batch uploaded lab test results",
-      testResults: uniqueTestResults,
+      physician_name: patient.physicianName || "Unknown Physician",
+      
+      // Pass PGX panel data to HL7 generator
+      pgxPanel: pgxPanel,
+      
+      // Keep testResults for backward compatibility but empty
+      testResults: []
+
+      // test_case_id: patient.sampleReferenceNumber,
+      // specimen_type: patient.specimenType || "Whole Blood",
+      // specimen_id: `SP-${patient.sampleReferenceNumber}`,
+      // specimen_collected_from: "TTSH Hospital",
+      // specimen_received: dayjs().format("YYYY-MM-DD"),
+      // test_information: "Pharmacogenomics Test",
+      // lab_result_summary: "Batch uploaded lab test results",
+      // testResults: uniqueTestResults,
     });
 
       
