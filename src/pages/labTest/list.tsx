@@ -1,11 +1,12 @@
 import { List, useTable, EditButton, ShowButton } from "@refinedev/antd";
-import { Table, Space, Checkbox, Button, Modal, message, Input } from "antd";
+import { Table, Space, Button, Modal, message, Input } from "antd";
 import moment from "moment";
 import { API_URL } from "../../config";
-import { DeleteOutlined, FilePdfOutlined, FileTextOutlined, EyeOutlined, SearchOutlined, ReloadOutlined } from "@ant-design/icons";
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import { DeleteOutlined, FilePdfOutlined, FileTextOutlined, EyeOutlined, SearchOutlined } from "@ant-design/icons";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { CrudFilters } from "@refinedev/core";
+import { useList } from "@refinedev/core";
+import debounce from "lodash/debounce";
 
 interface ILabTest {
   id: number;
@@ -43,133 +44,90 @@ interface ILabTest {
   sample_file?: string;
   created_at: string;
   updated_at: string;
-
 }
 
 export const PostList = () => {
-  const [searchText, setSearchText] = useState<string>("");
-  const { tableProps, tableQueryResult, setFilters } = useTable<ILabTest>({
+  const [searchValue, setSearchValue] = useState<string>("");
+  const [filteredData, setFilteredData] = useState<ILabTest[]>([]);
+  
+  const navigate = useNavigate();
+  const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([]);
+
+  // Main table data - always fetch all data
+  const { tableProps, tableQueryResult } = useTable<ILabTest>({
     resource: "lab-tests",
   });
 
-  const navigate = useNavigate();
-  const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([]);
-  
-  // Use ref to track if we're clearing the search to prevent debounced search from interfering
-  const isClearingRef = useRef(false);
+  // Search functionality using useList with filters
+  const { refetch: refetchSearchResults } = useList<ILabTest>({
+    resource: "lab-tests",
+    config: {
+      filters: searchValue.trim() ? [
+        {
+          field: "test_request_reference_number",
+          operator: "contains",
+          value: searchValue.trim(),
+        },
+        {
+          field: "patient_name",
+          operator: "contains", 
+          value: searchValue.trim(),
+        }
+      ] : [],
+    },
+    queryOptions: {
+      enabled: false, // Only fetch when we trigger refetch
+      onSuccess: (data) => {
+        setFilteredData(data.data);
+      },
+    },
+  });
 
-  // // Debounced search function to avoid too many API calls
-  // const debouncedSearch = useCallback(
-  //   (() => {
-  //     let timeoutId: NodeJS.Timeout;
-  //     return (value: string) => {
-  //       clearTimeout(timeoutId);
-  //       timeoutId = setTimeout(() => {
-  //         // Don't apply debounced search if we're in the middle of clearing
-  //         if (isClearingRef.current) {
-  //           isClearingRef.current = false;
-  //           return;
-  //         }
-          
-  //         // Set filters based on search text
-  //         const newFilters: CrudFilters = value ? [
-  //           {
-  //             field: "test_request_reference_number",
-  //             operator: "eq",
-  //             value: value,
-  //           }
-  //         ] : []; // Empty array = no filters = show all data
-          
-  //         console.log("Debounced search applying filters:", newFilters);
-  //         setFilters(newFilters);
-  //       }, 300); // 300ms delay
-  //     };
-  //   })(),
-  //   [setFilters]
-  // );
+  // Debounced search function
+  const debouncedSearch = debounce((value: string) => {
+    if (value.trim()) {
+      refetchSearchResults();
+    } else {
+      // If search is empty, use original table data
+      setFilteredData([...(tableProps.dataSource || [])]);
+    }
+  }, 500);
 
-  // // Update search when searchText changes, but only if we're not clearing
-  // useEffect(() => {
-  //   if (!isClearingRef.current) {
-  //     debouncedSearch(searchText);
-  //   }
-  // }, [searchText, debouncedSearch]);
+  // Handle search input change
+  const handleSearchChange = (value: string) => {
+    setSearchValue(value);
+    debouncedSearch(value);
+  };
 
-  // // Debug: Log current state
-  // useEffect(() => {
-  //   console.log("Current searchText:", searchText);
-  //   console.log("Current table data count:", tableProps.dataSource?.length || 0);
-  //   console.log("Is filtered:", searchText ? "Yes" : "No (showing all data)");
-  // }, [searchText, tableProps.dataSource]);
+  // Handle search button click
+  const handleSearch = (value: string) => {
+    setSearchValue(value);
+    if (value.trim()) {
+      refetchSearchResults();
+    } else {
+      setFilteredData([...(tableProps.dataSource || [])]);
+    }
+  };
 
-  // // Handle search input change and immediate search execution
-  // const handleSearch = (value: string) => {
-  //   console.log("handleSearch called with value:", value);
-  //   isClearingRef.current = false; // Reset clearing flag
-  //   setSearchText(value);
-    
-  //   // Immediately apply filters when search button is clicked
-  //   const newFilters: CrudFilters = value ? [
-  //     {
-  //       field: "test_request_reference_number",
-  //       operator: "eq",
-  //       value: value,
-  //     }
-  //   ] : []; // Empty filters = default list
-    
-  //   console.log("handleSearch applying filters:", newFilters);
-  //   setFilters(newFilters);
-  // };
+  // Handle clear search
+  const handleClearSearch = () => {
+    setSearchValue("");
+    setFilteredData([...(tableProps.dataSource || [])]);
+  };
 
-  // // Enhanced clear search function
-  // const handleClearSearch = () => {
-  //   console.log("handleClearSearch triggered");
-    
-  //   // Set the clearing flag to prevent debounced search from interfering
-  //   isClearingRef.current = true;
-    
-  //   // Clear search text immediately
-  //   setSearchText("");
-    
-  //   // Clear filters immediately - this should return to default list
-  //   console.log("Clearing filters to show all data");
-  //   setFilters([]);
-    
-  //   // Force a small delay to ensure the state updates are processed
-  //   setTimeout(() => {
-  //     console.log("Clear operation completed");
-  //     isClearingRef.current = false;
-  //   }, 100);
-  // };
+  // Update filtered data when main table data changes
+  useEffect(() => {
+    if (!searchValue.trim()) {
+      setFilteredData([...(tableProps.dataSource || [])]);
+    }
+  }, [tableProps.dataSource, searchValue]);
 
-  // // Handle reload all data
-  // const handleReloadData = () => {
-  //   console.log("Reload button clicked - reloading all lab test data");
-    
-  //   // Set clearing flag to prevent interference
-  //   isClearingRef.current = true;
-    
-  //   // Clear search text
-  //   setSearchText("");
-    
-  //   // Clear all filters to show all data
-  //   setFilters([]);
-    
-  //   // Clear selected rows
-  //   setSelectedRowKeys([]);
-    
-  //   // Force refetch from API
-  //   tableQueryResult.refetch();
-    
-  //   // Reset clearing flag
-  //   setTimeout(() => {
-  //     isClearingRef.current = false;
-  //   }, 100);
-    
-  //   message.success("Lab test data reloaded successfully");
-  //   console.log("All lab test data reloaded from API");
-  // };
-
+  // Initial load - set filtered data to all data
+  useEffect(() => {
+    if (tableProps.dataSource && !searchValue.trim()) {
+      setFilteredData([...tableProps.dataSource]);
+    }
+  }, [tableProps.dataSource]);
 
   const handleDelete = (record: ILabTest) => {
     Modal.confirm({
@@ -196,7 +154,6 @@ export const PostList = () => {
           }
 
           message.success("Record soft deleted successfully");
-          // Panggil refetch dari tableQueryResult
           tableQueryResult.refetch();
         } catch (error) {
           console.error("Error deleting record:", error);
@@ -231,8 +188,8 @@ export const PostList = () => {
           );
 
           message.success("Selected records deleted successfully");
-          setSelectedRowKeys([]); // Clear selection
-          tableQueryResult.refetch(); // Refresh the table
+          setSelectedRowKeys([]);
+          tableQueryResult.refetch();
         } catch (error) {
           console.error("Error deleting records:", error);
           message.error("Failed to delete selected records");
@@ -242,12 +199,11 @@ export const PostList = () => {
   };
 
   const handleFileDownload = (fileUrl: string, fileName: string) => {
-    // Get authentication token from localStorage
     const token = localStorage.getItem("authToken");
     
     fetch(`${fileUrl}`, {
       headers: {
-        Authorization: `Bearer ${token}` // Add authentication header
+        Authorization: `Bearer ${token}`
       }
     })
     .then(response => {
@@ -257,9 +213,7 @@ export const PostList = () => {
       return response.blob();
     })
     .then(blob => {
-      // Create a URL for the blob
       const url = window.URL.createObjectURL(blob);
-      // Create a temporary anchor element and trigger download
       const a = document.createElement('a');
       a.href = url;
       a.download = fileName;
@@ -274,7 +228,6 @@ export const PostList = () => {
     });
   };
 
-
   const rowSelection = {
     selectedRowKeys,
     onChange: (selectedKeys: React.Key[]) => {
@@ -282,34 +235,29 @@ export const PostList = () => {
     },
   };
 
+  // Create modified table props with filtered data
+  const modifiedTableProps = {
+    ...tableProps,
+    dataSource: filteredData,
+  };
+
   return (
     <List>
-      {/* Search Bar */}
       <Space style={{ marginBottom: 16, width: '100%' }} direction="vertical">
-       {/* <Input.Search
-          placeholder="Search by Test Request Reference Number (e.g., CR1062)..."
-          allowClear
-          enterButton={<SearchOutlined />}
-          size="large"
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          onSearch={handleSearch}
-          onClear={handleClearSearch}
-          style={{ maxWidth: 600 }}
-        />
-         <Button
-            type="default"
-            icon={<ReloadOutlined />}
-            onClick={handleReloadData}
-            loading={tableQueryResult.isRefetching || tableQueryResult.isLoading}
-            size="large"
-            title="Reload all lab test data"
-          >
-            {tableQueryResult.isRefetching ? 'Reloading...' : 'Reload'}
-          </Button> */}
         
         {/* Action Buttons */}
         <Space>
+          <Input.Search
+            placeholder="Search by Patient Name or Test Request Reference Number"
+            allowClear
+            enterButton={<SearchOutlined />}
+            size="middle"
+            value={searchValue}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            onSearch={handleSearch}
+            onClear={handleClearSearch}
+            style={{ width: 450 }}
+          />
           <Button
             type="primary"
             danger
@@ -321,7 +269,6 @@ export const PostList = () => {
           </Button>
           <Button
             type="primary"
-            // icon={<UploadOutlined />}
             onClick={() => navigate('/lab-tests/batch-upload')}
             style={{ marginLeft: 8 }}
           >
@@ -329,10 +276,11 @@ export const PostList = () => {
           </Button>
         </Space>
       </Space>
+      
       <Table
-        {...tableProps}
+        {...modifiedTableProps}
         rowKey="id"
-        rowSelection={rowSelection} // Add row selection
+        rowSelection={rowSelection}
       >
         <Table.Column dataIndex="patient_name" title="PATIENT NAME" />
         <Table.Column dataIndex="requester" title="REQUESTER" />
@@ -376,7 +324,6 @@ export const PostList = () => {
                   >
                     HL7
                   </Button>
-           
                 </Space>
               ) : (
                 <span>No HL7</span>

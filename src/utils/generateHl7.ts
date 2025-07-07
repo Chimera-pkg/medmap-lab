@@ -1,78 +1,196 @@
 export function buildHL7Message(data: any): string {
   console.log("Data received in buildHL7Message:", data);
 
-  // MSH Segment
+  const currentDateTime = new Date()
+    .toISOString()
+    .replace(/[-:T]/g, "")
+    .slice(0, 14);
+  const messageControlId = `TTSH${Math.floor(Math.random() * 100000)}`;
+
+  // MSH Segment - EPIC Compatible
   const mshSegment = [
     "MSH",
     "|",
     "^~\\&",
-    "TTSH",
-    "LabApp",
-    "ReceiverApp",
-    "ReceiverFac",
-    new Date().toISOString().replace(/[-:]/g, "").slice(0, 14),
+    "LIS",
+    "TTSHLIS",
+    "EMR",
+    "TTSHCLOVER",
+    currentDateTime,
     "",
     "ORU^R01",
-    "12345",
+    messageControlId,
     "P",
-    "2.5",
+    "2.3",
+    "",
+    "",
+    "AL",
+    "NE",
   ].join("|");
 
-  // PID Segment
+  // PID Segment - EPIC Compatible
+  const patientNameParts = data.patient_name.split(" ");
+  const lastName = patientNameParts[patientNameParts.length - 1] || "";
+  const firstName = patientNameParts.slice(0, -1).join(" ") || "";
+
   const pidSegment = [
     "PID",
-    "1",
-    `${data.mrn}^^^Hosp^MR^ISO`,
     "",
-    `${data.patient_name.split(" ")[1]}^${data.patient_name.split(" ")[0]}`,
     "",
-    data.date_of_birth,
-    data.sex,
+    data.id_number || data.mrn || "",
+    "",
+    `${lastName}^${firstName}`,
+    "",
+    data.date_of_birth ? data.date_of_birth.replace(/-/g, "") : "",
+    data.sex || "U",
+    "",
+    "C^Chinese", // You may want to make this dynamic based on data.ethnicity
+    data.patient_address || "11^JALAN TAN TOCK SENG",
+    "",
+    data.patient_contact_number || "6666 6666",
+    "",
+    "",
+    "",
+    "",
+    data.test_case_id || "",
   ].join("|");
 
-  // OBR Segment
+  // PV1 Segment - Patient Visit
+  const pv1Segment = [
+    "PV1",
+    "",
+    "I",
+    "TCDDRAN^NONE^^^TTSH DDR-ANGIO",
+    "",
+    "",
+    "",
+    "15799F^" + (data.physician_name || "UNKNOWN PHYSICIAN"),
+    "15799F^" + (data.physician_name || "UNKNOWN PHYSICIAN"),
+    "",
+    "TSGMD",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "15799F^" + (data.physician_name || "UNKNOWN PHYSICIAN"),
+    "NA",
+    data.test_case_id + "^^^^I~" + data.test_case_id + "^^^^O",
+    "SELF^19991130000000",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    currentDateTime.slice(0, 12) + "59",
+  ].join("|");
+
+  // ORC Segment - Order Control
+  const labAccessionNo = data.test_case_id || `${currentDateTime}001`;
+  const orcSegment = [
+    "ORC",
+    "",
+    "^EPC",
+    labAccessionNo + "^LAB",
+    "",
+    "A",
+    "",
+    "^^^" + currentDateTime.slice(0, 12) + "00^^R",
+    "",
+    "",
+    "",
+    "",
+    "15799F^" + (data.physician_name || "UNKNOWN PHYSICIAN"),
+    "TCDDRAN^^^^TTSH DDR-ANGIO^^^^TTSH DDR-ANGIO",
+  ].join("|");
+
+  // OBR Segment - Observation Request
   const obrSegment = [
     "OBR",
     "1",
-    data.test_case_id,
+    "^EPC",
+    labAccessionNo + "^TTSHTDNL",
+    "PGXP^PGX Targeted Panel",
     "",
-    "GENETIC^Genetic Test",
     "",
-    data.specimen_received,
+    currentDateTime.slice(0, 12) + "29",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    currentDateTime.slice(0, 12) + "29",
+    data.specimen_type || "EDTA",
+    "15799F^" + (data.physician_name || "UNKNOWN PHYSICIAN"),
+    "",
+    labAccessionNo.slice(-10),
+    "",
+    labAccessionNo.slice(-10),
+    labAccessionNo + "-" + messageControlId,
+    currentDateTime,
+    "",
+    "GL^24^52^036",
+    "C",
+    "",
+    "^^^^^R",
   ].join("|");
 
   console.log("Test Results:", data.testResults);
 
-  // OBX Segments
+  // OBX Segments - Group genes under single OBR
   const obxSegments = data.testResults.map((result: any, index: number) => {
-    const clinicalAnnotation =
-      result.clinicalannotation || "No Clinical Annotation provided.";
+    const gene = Array.isArray(result.gene)
+      ? result.gene.join(", ")
+      : result.gene || "";
+    const genotype = Array.isArray(result.genotype)
+      ? result.genotype.join(", ")
+      : result.genotype || "";
+    const phenotype = result.phenotype || "N/A";
 
     return [
       "OBX",
       index + 1,
-      "CWE",
-      `Drug: ${result.drug}`,
-      `Gene: ${
-        Array.isArray(result.gene) ? result.gene.join(", ") : result.gene
-      }`,
-      `Genotype: ${
-        Array.isArray(result.genotype)
-          ? result.genotype.join(", ")
-          : result.genotype
-      }`,
-      `Phenotype: ${result.phenotype || "N/A"}`,
-      `Toxicity: ${result.toxicity || "N/A"}`,
-      `Dosage: ${result.dosage || "N/A"}`,
-      `Efficacy: ${result.efficacy || "N/A"}`,
-      `Evidence: ${result.evidence || "N/A"}`,
-      `Clinical Action: ${clinicalAnnotation}`,
-      "F",
+      "ST", // String data type
+      `${gene}^Genotype^LN`,
+      "",
+      genotype,
+      "",
+      "",
+      "",
+      "F", // Final result
+      "",
+      "",
+      currentDateTime,
+      "",
+      "",
+      phenotype,
     ].join("|");
   });
 
   console.log("Generated OBX Segments:", obxSegments);
 
-  // Combine all segments
-  return [mshSegment, pidSegment, obrSegment, ...obxSegments].join("\r");
+  // Combine all segments with proper HL7 line separators
+  return [
+    mshSegment,
+    pidSegment,
+    pv1Segment,
+    orcSegment,
+    obrSegment,
+    ...obxSegments,
+  ].join("\r\n");
 }

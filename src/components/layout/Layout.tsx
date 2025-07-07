@@ -1,10 +1,8 @@
 import React, { useMemo } from "react";
 import { Grid, Layout as AntdLayout } from "antd";
-
 import { ThemedSiderV2 as DefaultSider } from "./sider";
 import { Header as DefaultHeader } from "./header";
 import type { RefineThemedLayoutV2Props as BaseRefineThemedLayoutV2Props } from "@refinedev/antd";
-
 export type RefineThemedLayoutV2Props = BaseRefineThemedLayoutV2Props;
 import { ThemedLayoutContextProvider } from "@refinedev/antd";
 
