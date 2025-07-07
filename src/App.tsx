@@ -132,7 +132,7 @@ const App: React.FC = () => {
                 list: "/lab-tests",
                 show: "/lab-tests/show/:id",
                 edit: "/lab-tests/edit/:id",
-                create: "/lab-tests/create",
+                // create: "/lab-tests/create",
                 icon: <FileAddOutlined />,
               },
               {
