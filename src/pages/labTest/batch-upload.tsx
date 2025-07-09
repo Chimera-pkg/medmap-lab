@@ -11,7 +11,8 @@ import { buildHL7Message } from "../../utils/generateHl7";
 
 interface PatientData {
   sampleReferenceNumber: string;
-  patientName: string;
+  patientName: string; // Keep for display
+  patientFirstName?: string; // Add this new field
   patientLastName?: string;
   dateOfBirth: string;
   sex: string;
@@ -128,7 +129,10 @@ export const BatchUpload: React.FC = () => {
 
               const firstName = row['Patient First Name'] || row['patient_first_name'] || row['patient.firstName'] || row['firstName'] || '';
               const lastName = row['Patient Last Name'] || row['patient_last_name'] || row['patient.lastName'] || row['lastName'] || '';
-              const patientName = `${firstName} ${lastName}`.trim();
+              
+               // Create display name for frontend use (keep this for compatibility)
+              const patientName = `${firstName} ${lastName}`.trim() || lastName || firstName;
+
 
               return {
                 // Basic required fields
@@ -194,6 +198,13 @@ export const BatchUpload: React.FC = () => {
         console.log("Raw Excel data:", jsonData);
         
         patientData = jsonData.map((row: any) => {
+           // Extract first and last name separately for backend
+        const firstName = row['Patient First Name'] || row['patient_first_name'] || row['PatientFirstName'] || '';
+        const lastName = row['Patient Last Name'] || row['patient_last_name'] || row['PatientLastName'] || '';
+        
+        // Create display name for frontend use (fallback to individual names if combined name not available)
+        const patientName = row['Patient Name'] || row['patient_name'] || row['PatientName'] || `${firstName} ${lastName}`.trim() || lastName || firstName;
+
         return {
           // Basic required fields
           sampleReferenceNumber: row['Sample Reference Number'] || row['sample_ref_no'] || row['SampleReferenceNumber'] || '',
@@ -838,8 +849,9 @@ export const BatchUpload: React.FC = () => {
     formData.append("report_download_hl7", hl7Blob, `${sanitizedPatientName}_Report.hl7`);
   
     // Basic patient information
-     formData.append("patient_name", patientName);
-    formData.append("patient_last_name", patient.patientLastName || "");
+    formData.append("patient_name", patientName); // Keep for backward compatibility
+    formData.append("patient_first_name", patient.patientFirstName || ""); // Add this
+    formData.append("patient_last_name", patient.patientLastName || "");  
     formData.append("date_of_birth", dateOfBirth || currentDate);
     formData.append("sex", sex);
     formData.append("mrn", patient.mrn || `MRN-${patient.sampleReferenceNumber}`);
