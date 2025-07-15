@@ -509,7 +509,7 @@ const HL7_STANDARD_TEMPLATE: HL7TemplateRow[] = [
   // HLA-A*31:01 - 8 rows (OBX 41-48)
   {
     obxRunNumber: 41,
-    geneName: "HLA-A",
+    geneName: "HLA-A", // ✅ BENAR
     section: 2,
     geneSectionRunNumber: "2a",
     code: "ST",
@@ -521,7 +521,7 @@ const HL7_STANDARD_TEMPLATE: HL7TemplateRow[] = [
   },
   {
     obxRunNumber: 42,
-    geneName: "HLA-A",
+    geneName: "HLA-A", // ✅ BENAR
     section: 2,
     geneSectionRunNumber: "2a",
     code: "CWE",
@@ -587,10 +587,11 @@ const HL7_STANDARD_TEMPLATE: HL7TemplateRow[] = [
     code: "ST",
     fixedKeyName: "ST|VARCONCEPT539^Phenotype Description^EPIC",
     fixedValue: "",
-    variableValue: "{phenotype}",
+    variableValue: "{phenotype}", // This should be "Negative" or "Positive"
     fullTemplate:
       "OBX|{obxRunNumber}|ST|VARCONCEPT539^Phenotype Description^EPIC|{geneSectionRunNumber}|{phenotype}|",
   },
+  // For OBX 48 - Interpretation should show risk message
   {
     obxRunNumber: 48,
     geneName: "HLA-A",
@@ -599,7 +600,7 @@ const HL7_STANDARD_TEMPLATE: HL7TemplateRow[] = [
     code: "ST",
     fixedKeyName: "ST|VARCONCEPT554^Interpretation^EPIC",
     fixedValue: "",
-    variableValue: "{interpretation}",
+    variableValue: "{interpretation}", // This should be "No increased risk..." or "Increased risk..."
     fullTemplate:
       "OBX|{obxRunNumber}|ST|VARCONCEPT554^Interpretation^EPIC|{geneSectionRunNumber}|{interpretation}|",
   },
@@ -615,9 +616,287 @@ const HL7_STANDARD_TEMPLATE: HL7TemplateRow[] = [
     fullTemplate:
       "OBX|{obxRunNumber}|ST|VARCONCEPT504^Variant Name^EPIC|{geneSectionRunNumber}|HLA-B *15:02|",
   },
+  // Add missing templates between OBX 49-72:
+  {
+    obxRunNumber: 50,
+    geneName: "HLA-B-15-02",
+    section: 2,
+    geneSectionRunNumber: "2b",
+    code: "CWE",
+    fixedKeyName: "CWE|VARCONCEPT503^Variant Category^EPIC",
+    fixedValue: "^Structural",
+    variableValue: "",
+    fullTemplate:
+      "OBX|{obxRunNumber}|CWE|VARCONCEPT503^Variant Category^EPIC|{geneSectionRunNumber}|^Structural|",
+  },
+  {
+    obxRunNumber: 51,
+    geneName: "HLA-B-15-02",
+    section: 2,
+    geneSectionRunNumber: "2b",
+    code: "CWE",
+    fixedKeyName: "CWE|VARCONCEPT514^Gene Studied^EPIC",
+    fixedValue: "4932^HLA-B^HGNC",
+    variableValue: "",
+    fullTemplate:
+      "OBX|{obxRunNumber}|CWE|VARCONCEPT514^Gene Studied^EPIC|{geneSectionRunNumber}|4932^HLA-B^HGNC|",
+  },
+  {
+    obxRunNumber: 52,
+    geneName: "HLA-B-15-02",
+    section: 2,
+    geneSectionRunNumber: "2b",
+    code: "CWE",
+    fixedKeyName: "CWE|VARCONCEPT552^Genetic Variant Assessment^EPIC",
+    fixedValue: "^Detected",
+    variableValue: "",
+    fullTemplate:
+      "OBX|{obxRunNumber}|CWE|VARCONCEPT552^Genetic Variant Assessment^EPIC|{geneSectionRunNumber}|^Detected|",
+  },
+  {
+    obxRunNumber: 53,
+    geneName: "HLA-B-15-02",
+    section: 2,
+    geneSectionRunNumber: "2b",
+    code: "ST",
+    fixedKeyName: "ST|VARCONCEPT529^Allele Name^EPIC",
+    fixedValue: "*15:02",
+    variableValue: "",
+    fullTemplate:
+      "OBX|{obxRunNumber}|ST|VARCONCEPT529^Allele Name^EPIC|{geneSectionRunNumber}|*15:02|",
+  },
+  {
+    obxRunNumber: 54,
+    geneName: "HLA-B-15-02",
+    section: 2,
+    geneSectionRunNumber: "2b",
+    code: "CWE",
+    fixedKeyName: "CWE|VARCONCEPT553^Variant Classification^EPIC",
+    fixedValue: "^Drug response",
+    variableValue: "",
+    fullTemplate:
+      "OBX|{obxRunNumber}|CWE|VARCONCEPT553^Variant Classification^EPIC|{geneSectionRunNumber}|^Drug response|",
+  },
+  {
+    obxRunNumber: 55,
+    geneName: "HLA-B-15-02",
+    section: 2,
+    geneSectionRunNumber: "2b",
+    code: "ST",
+    fixedKeyName: "ST|VARCONCEPT539^Phenotype Description^EPIC",
+    fixedValue: "",
+    variableValue: "{phenotype}",
+    fullTemplate:
+      "OBX|{obxRunNumber}|ST|VARCONCEPT539^Phenotype Description^EPIC|{geneSectionRunNumber}|{phenotype}|",
+  },
+  {
+    obxRunNumber: 56,
+    geneName: "HLA-B-15-02",
+    section: 2,
+    geneSectionRunNumber: "2b",
+    code: "ST",
+    fixedKeyName: "ST|VARCONCEPT554^Interpretation^EPIC",
+    fixedValue: "",
+    variableValue: "{interpretation}",
+    fullTemplate:
+      "OBX|{obxRunNumber}|ST|VARCONCEPT554^Interpretation^EPIC|{geneSectionRunNumber}|{interpretation}|",
+  },
 
-  // Continue with all other genes following the same pattern...
-  // I'll add a few more key genes to show the pattern
+  // HLA-B *57:01 - OBX 57-64
+  {
+    obxRunNumber: 57,
+    geneName: "HLA-B-57-01",
+    section: 2,
+    geneSectionRunNumber: "2c",
+    code: "ST",
+    fixedKeyName: "ST|VARCONCEPT504^Variant Name^EPIC",
+    fixedValue: "HLA-B *57:01",
+    variableValue: "",
+    fullTemplate:
+      "OBX|{obxRunNumber}|ST|VARCONCEPT504^Variant Name^EPIC|{geneSectionRunNumber}|HLA-B *57:01|",
+  },
+  {
+    obxRunNumber: 58,
+    geneName: "HLA-B-57-01",
+    section: 2,
+    geneSectionRunNumber: "2c",
+    code: "CWE",
+    fixedKeyName: "CWE|VARCONCEPT503^Variant Category^EPIC",
+    fixedValue: "^Structural",
+    variableValue: "",
+    fullTemplate:
+      "OBX|{obxRunNumber}|CWE|VARCONCEPT503^Variant Category^EPIC|{geneSectionRunNumber}|^Structural|",
+  },
+  {
+    obxRunNumber: 59,
+    geneName: "HLA-B-57-01",
+    section: 2,
+    geneSectionRunNumber: "2c",
+    code: "CWE",
+    fixedKeyName: "CWE|VARCONCEPT514^Gene Studied^EPIC",
+    fixedValue: "4932^HLA-B^HGNC",
+    variableValue: "",
+    fullTemplate:
+      "OBX|{obxRunNumber}|CWE|VARCONCEPT514^Gene Studied^EPIC|{geneSectionRunNumber}|4932^HLA-B^HGNC|",
+  },
+  {
+    obxRunNumber: 60,
+    geneName: "HLA-B-57-01",
+    section: 2,
+    geneSectionRunNumber: "2c",
+    code: "CWE",
+    fixedKeyName: "CWE|VARCONCEPT552^Genetic Variant Assessment^EPIC",
+    fixedValue: "^Detected",
+    variableValue: "",
+    fullTemplate:
+      "OBX|{obxRunNumber}|CWE|VARCONCEPT552^Genetic Variant Assessment^EPIC|{geneSectionRunNumber}|^Detected|",
+  },
+  {
+    obxRunNumber: 61,
+    geneName: "HLA-B-57-01",
+    section: 2,
+    geneSectionRunNumber: "2c",
+    code: "ST",
+    fixedKeyName: "ST|VARCONCEPT529^Allele Name^EPIC",
+    fixedValue: "*57:01",
+    variableValue: "",
+    fullTemplate:
+      "OBX|{obxRunNumber}|ST|VARCONCEPT529^Allele Name^EPIC|{geneSectionRunNumber}|*57:01|",
+  },
+  {
+    obxRunNumber: 62,
+    geneName: "HLA-B-57-01",
+    section: 2,
+    geneSectionRunNumber: "2c",
+    code: "CWE",
+    fixedKeyName: "CWE|VARCONCEPT553^Variant Classification^EPIC",
+    fixedValue: "^Drug response",
+    variableValue: "",
+    fullTemplate:
+      "OBX|{obxRunNumber}|CWE|VARCONCEPT553^Variant Classification^EPIC|{geneSectionRunNumber}|^Drug response|",
+  },
+  {
+    obxRunNumber: 63,
+    geneName: "HLA-B-57-01",
+    section: 2,
+    geneSectionRunNumber: "2c",
+    code: "ST",
+    fixedKeyName: "ST|VARCONCEPT539^Phenotype Description^EPIC",
+    fixedValue: "",
+    variableValue: "{phenotype}",
+    fullTemplate:
+      "OBX|{obxRunNumber}|ST|VARCONCEPT539^Phenotype Description^EPIC|{geneSectionRunNumber}|{phenotype}|",
+  },
+  {
+    obxRunNumber: 64,
+    geneName: "HLA-B-57-01",
+    section: 2,
+    geneSectionRunNumber: "2c",
+    code: "ST",
+    fixedKeyName: "ST|VARCONCEPT554^Interpretation^EPIC",
+    fixedValue: "",
+    variableValue: "{interpretation}",
+    fullTemplate:
+      "OBX|{obxRunNumber}|ST|VARCONCEPT554^Interpretation^EPIC|{geneSectionRunNumber}|{interpretation}|",
+  },
+
+  // HLA-B *58:01 - OBX 65-72
+  {
+    obxRunNumber: 65,
+    geneName: "HLA-B-58-01",
+    section: 2,
+    geneSectionRunNumber: "2d",
+    code: "ST",
+    fixedKeyName: "ST|VARCONCEPT504^Variant Name^EPIC",
+    fixedValue: "HLA-B *58:01",
+    variableValue: "",
+    fullTemplate:
+      "OBX|{obxRunNumber}|ST|VARCONCEPT504^Variant Name^EPIC|{geneSectionRunNumber}|HLA-B *58:01|",
+  },
+  {
+    obxRunNumber: 66,
+    geneName: "HLA-B-58-01",
+    section: 2,
+    geneSectionRunNumber: "2d",
+    code: "CWE",
+    fixedKeyName: "CWE|VARCONCEPT503^Variant Category^EPIC",
+    fixedValue: "^Structural",
+    variableValue: "",
+    fullTemplate:
+      "OBX|{obxRunNumber}|CWE|VARCONCEPT503^Variant Category^EPIC|{geneSectionRunNumber}|^Structural|",
+  },
+  {
+    obxRunNumber: 67,
+    geneName: "HLA-B-58-01",
+    section: 2,
+    geneSectionRunNumber: "2d",
+    code: "CWE",
+    fixedKeyName: "CWE|VARCONCEPT514^Gene Studied^EPIC",
+    fixedValue: "4932^HLA-B^HGNC",
+    variableValue: "",
+    fullTemplate:
+      "OBX|{obxRunNumber}|CWE|VARCONCEPT514^Gene Studied^EPIC|{geneSectionRunNumber}|4932^HLA-B^HGNC|",
+  },
+  {
+    obxRunNumber: 68,
+    geneName: "HLA-B-58-01",
+    section: 2,
+    geneSectionRunNumber: "2d",
+    code: "CWE",
+    fixedKeyName: "CWE|VARCONCEPT552^Genetic Variant Assessment^EPIC",
+    fixedValue: "^Detected",
+    variableValue: "",
+    fullTemplate:
+      "OBX|{obxRunNumber}|CWE|VARCONCEPT552^Genetic Variant Assessment^EPIC|{geneSectionRunNumber}|^Detected|",
+  },
+  {
+    obxRunNumber: 69,
+    geneName: "HLA-B-58-01",
+    section: 2,
+    geneSectionRunNumber: "2d",
+    code: "ST",
+    fixedKeyName: "ST|VARCONCEPT529^Allele Name^EPIC",
+    fixedValue: "*58:01",
+    variableValue: "",
+    fullTemplate:
+      "OBX|{obxRunNumber}|ST|VARCONCEPT529^Allele Name^EPIC|{geneSectionRunNumber}|*58:01|",
+  },
+  {
+    obxRunNumber: 70,
+    geneName: "HLA-B-58-01",
+    section: 2,
+    geneSectionRunNumber: "2d",
+    code: "CWE",
+    fixedKeyName: "CWE|VARCONCEPT553^Variant Classification^EPIC",
+    fixedValue: "^Drug response",
+    variableValue: "",
+    fullTemplate:
+      "OBX|{obxRunNumber}|CWE|VARCONCEPT553^Variant Classification^EPIC|{geneSectionRunNumber}|^Drug response|",
+  },
+  {
+    obxRunNumber: 71,
+    geneName: "HLA-B-58-01",
+    section: 2,
+    geneSectionRunNumber: "2d",
+    code: "ST",
+    fixedKeyName: "ST|VARCONCEPT539^Phenotype Description^EPIC",
+    fixedValue: "",
+    variableValue: "{phenotype}",
+    fullTemplate:
+      "OBX|{obxRunNumber}|ST|VARCONCEPT539^Phenotype Description^EPIC|{geneSectionRunNumber}|{phenotype}|",
+  },
+  {
+    obxRunNumber: 72,
+    geneName: "HLA-B-58-01",
+    section: 2,
+    geneSectionRunNumber: "2d",
+    code: "ST",
+    fixedKeyName: "ST|VARCONCEPT554^Interpretation^EPIC",
+    fixedValue: "",
+    variableValue: "{interpretation}",
+    fullTemplate:
+      "OBX|{obxRunNumber}|ST|VARCONCEPT554^Interpretation^EPIC|{geneSectionRunNumber}|{interpretation}|",
+  },
 
   // NUDT15 - 5 rows (OBX 73-77)
   {
@@ -994,6 +1273,14 @@ const HL7_STANDARD_TEMPLATE: HL7TemplateRow[] = [
 // Function to get activity score based on genotype
 function getActivityScore(gene: string, genotype: string): string {
   const activityScoreMap: Record<string, Record<string, string>> = {
+    ABCG2: {
+      "C/C": "2",
+      "C/A": "1.5",
+      "A/A": "1",
+      "421C/C": "2", // Handle both formats
+      "421C/A": "1.5",
+      "421A/A": "1",
+    },
     CYP2C9: {
       "*1/*1": "2^2",
       "*1/*2": "1.5^2",
@@ -1026,9 +1313,17 @@ function getHLAInterpretation(gene: string, phenotype: string): string {
       Negative: "No increased risk of carbamazepine hypersensitivity",
       Positive: "Increased risk of carbamazepine hypersensitivity",
     },
-    "HLA-B": {
+    "HLA-B-15-02": {
       Negative: "No increased risk of carbamazepine hypersensitivity",
+      Positive: "Increased risk of carbamazepine hypersensitivity",
+    },
+    "HLA-B-57-01": {
+      Negative: "No increased risk of abacavir hypersensitivity",
       Positive: "Increased risk of abacavir hypersensitivity",
+    },
+    "HLA-B-58-01": {
+      Negative: "No increased risk of allopurinol hypersensitivity",
+      Positive: "Increased risk of allopurinol hypersensitivity",
     },
   };
 
@@ -1038,61 +1333,228 @@ function getHLAInterpretation(gene: string, phenotype: string): string {
   );
 }
 
-// Function to generate OBX segments for genes present in input data
+interface GeneData {
+  gene: string;
+  genotype: string;
+  phenotype: string;
+  interpretation?: string;
+}
+
 function generateOBXSegmentsForGenes(
   inputGenes: Array<{ gene: string; genotype: string; phenotype: string }>
 ): string[] {
   const obxSegments: string[] = [];
+  const geneDataMap = new Map<string, GeneData>();
 
-  inputGenes.forEach((inputGene) => {
-    // Find all template rows for this gene
-    const geneTemplateRows = HL7_STANDARD_TEMPLATE.filter(
-      (row) => row.geneName.toUpperCase() === inputGene.gene.toUpperCase()
+  console.log("=== DEBUG: Input Genes ===");
+  inputGenes.forEach((inputGene, index) => {
+    console.log(
+      `${index + 1}. Original: "${inputGene.gene}" -> Genotype: "${
+        inputGene.genotype
+      }" -> Phenotype: "${inputGene.phenotype}"`
     );
-
-    // Generate OBX segments for each template row
-    geneTemplateRows.forEach((templateRow) => {
-      let finalValue = templateRow.fixedValue;
-
-      // Replace variable values if they exist
-      if (templateRow.variableValue) {
-        let variableValue = templateRow.variableValue;
-
-        // Replace placeholders with actual data
-        variableValue = variableValue
-          .replace("{genotype}", inputGene.genotype)
-          .replace("{phenotype}", inputGene.phenotype)
-          .replace(
-            "{activityScore}",
-            getActivityScore(inputGene.gene, inputGene.genotype)
-          )
-          .replace(
-            "{interpretation}",
-            getHLAInterpretation(inputGene.gene, inputGene.phenotype)
-          );
-
-        finalValue = variableValue;
-      }
-
-      // Generate the complete OBX segment
-      const obxSegment = templateRow.fullTemplate
-        .replace("{obxRunNumber}", templateRow.obxRunNumber.toString())
-        .replace("{geneSectionRunNumber}", templateRow.geneSectionRunNumber)
-        .replace("{genotype}", inputGene.genotype)
-        .replace("{phenotype}", inputGene.phenotype)
-        .replace(
-          "{activityScore}",
-          getActivityScore(inputGene.gene, inputGene.genotype)
-        )
-        .replace(
-          "{interpretation}",
-          getHLAInterpretation(inputGene.gene, inputGene.phenotype)
-        );
-
-      obxSegments.push(obxSegment);
-    });
   });
 
+  // Enhanced gene name normalization
+  inputGenes.forEach((inputGene) => {
+    let normalizedGeneName = inputGene.gene.toUpperCase().trim();
+
+    console.log(
+      `🔍 Processing gene: "${inputGene.gene}" -> Normalized: "${normalizedGeneName}"`
+    );
+
+    // ✅ Enhanced HLA gene name normalization
+    if (
+      normalizedGeneName.includes("HLA-A") ||
+      normalizedGeneName.includes("HLA A")
+    ) {
+      normalizedGeneName = "HLA-A";
+      console.log(
+        `✅ HLA-A detected: "${inputGene.gene}" -> "${normalizedGeneName}"`
+      );
+    } else if (
+      normalizedGeneName.includes("HLA-B") ||
+      normalizedGeneName.includes("HLA B")
+    ) {
+      if (
+        normalizedGeneName.includes("15:02") ||
+        normalizedGeneName.includes("15-02") ||
+        normalizedGeneName.includes("*15:02")
+      ) {
+        normalizedGeneName = "HLA-B-15-02";
+        console.log(
+          `✅ HLA-B-15-02 detected: "${inputGene.gene}" -> "${normalizedGeneName}"`
+        );
+      } else if (
+        normalizedGeneName.includes("57:01") ||
+        normalizedGeneName.includes("57-01") ||
+        normalizedGeneName.includes("*57:01")
+      ) {
+        normalizedGeneName = "HLA-B-57-01";
+        console.log(
+          `✅ HLA-B-57-01 detected: "${inputGene.gene}" -> "${normalizedGeneName}"`
+        );
+      } else if (
+        normalizedGeneName.includes("58:01") ||
+        normalizedGeneName.includes("58-01") ||
+        normalizedGeneName.includes("*58:01")
+      ) {
+        normalizedGeneName = "HLA-B-58-01";
+        console.log(
+          `✅ HLA-B-58-01 detected: "${inputGene.gene}" -> "${normalizedGeneName}"`
+        );
+      } else {
+        console.log(`⚠️ Unknown HLA-B variant: "${inputGene.gene}"`);
+      }
+    }
+
+    // ✅ Create special handling for HLA genes with proper field mapping
+    let processedData: GeneData = { ...inputGene };
+
+    if (normalizedGeneName.startsWith("HLA-")) {
+      // For HLA genes, we need to extract the phenotype status and interpretation
+      // From your data: "Negative" goes to phenotype, risk message goes to interpretation
+
+      // Parse the phenotype field which might contain both status and interpretation
+      const phenotypeText = inputGene.phenotype || "";
+
+      if (phenotypeText.toLowerCase().includes("negative")) {
+        processedData.phenotype = "Negative";
+        processedData.interpretation = getHLAInterpretation(
+          normalizedGeneName,
+          "Negative"
+        );
+      } else if (phenotypeText.toLowerCase().includes("positive")) {
+        processedData.phenotype = "Positive";
+        processedData.interpretation = getHLAInterpretation(
+          normalizedGeneName,
+          "Positive"
+        );
+      } else {
+        // If we have the interpretation text directly, determine status from it
+        if (phenotypeText.toLowerCase().includes("no increased risk")) {
+          processedData.phenotype = "Negative";
+          processedData.interpretation = phenotypeText;
+        } else if (phenotypeText.toLowerCase().includes("increased risk")) {
+          processedData.phenotype = "Positive";
+          processedData.interpretation = phenotypeText;
+        } else {
+          processedData.phenotype = "Negative";
+          processedData.interpretation = "No specific interpretation available";
+        }
+      }
+
+      console.log(
+        `🧬 HLA Processing: ${normalizedGeneName} -> Phenotype: "${processedData.phenotype}", Interpretation: "${processedData.interpretation}"`
+      );
+    }
+
+    console.log(`📝 Mapping: "${normalizedGeneName}" -> Data:`, processedData);
+    geneDataMap.set(normalizedGeneName, processedData);
+  });
+
+  console.log("=== DEBUG: Gene Data Map ===");
+  console.log("Available genes in map:", Array.from(geneDataMap.keys()));
+
+  // Process ALL 102 templates in order
+  HL7_STANDARD_TEMPLATE.forEach((templateRow) => {
+    const geneData = geneDataMap.get(templateRow.geneName.toUpperCase());
+
+    if (templateRow.obxRunNumber >= 41 && templateRow.obxRunNumber <= 72) {
+      console.log(
+        `🔍 OBX ${templateRow.obxRunNumber}: Template gene "${templateRow.geneName}" -> Found data:`,
+        !!geneData
+      );
+    }
+
+    let finalTemplate = templateRow.fullTemplate;
+
+    if (geneData) {
+      // ✅ Format genotype for display - Remove 421 prefix for ABCG2
+      let displayGenotype = geneData.genotype;
+      if (templateRow.geneName === "ABCG2" && displayGenotype.includes("421")) {
+        displayGenotype = displayGenotype.replace(/421/g, "");
+        console.log(
+          `🔧 ABCG2 genotype converted: "${geneData.genotype}" -> "${displayGenotype}"`
+        );
+      }
+
+      // ✅ Format phenotype for display
+      let displayPhenotype = geneData.phenotype;
+      if (templateRow.geneName.startsWith("HLA-")) {
+        // For HLA genes, phenotype should be "Negative" or "Positive"
+        displayPhenotype = geneData.phenotype;
+      } else {
+        // For other genes, normalize phenotype
+        if (
+          displayPhenotype.toLowerCase().includes("normal") &&
+          displayPhenotype.toLowerCase().includes("function")
+        ) {
+          displayPhenotype = "Normal function";
+        }
+      }
+
+      // ✅ Get interpretation for HLA genes
+      let displayInterpretation = "";
+      if (templateRow.geneName.startsWith("HLA-")) {
+        displayInterpretation =
+          geneData.interpretation ||
+          getHLAInterpretation(templateRow.geneName, geneData.phenotype);
+      }
+
+      // Replace placeholders
+      finalTemplate = finalTemplate
+        .replace(/{obxRunNumber}/g, templateRow.obxRunNumber.toString())
+        .replace(/{geneSectionRunNumber}/g, templateRow.geneSectionRunNumber)
+        .replace(/{genotype}/g, displayGenotype)
+        .replace(/{phenotype}/g, displayPhenotype)
+        .replace(
+          /{activityScore}/g,
+          getActivityScore(geneData.gene, geneData.genotype)
+        )
+        .replace(/{interpretation}/g, displayInterpretation);
+
+      // Handle variable values
+      if (templateRow.variableValue) {
+        const parts = finalTemplate.split("|");
+        if (parts.length >= 6) {
+          let processedValue = templateRow.variableValue
+            .replace(/{genotype}/g, displayGenotype)
+            .replace(/{phenotype}/g, displayPhenotype)
+            .replace(
+              /{activityScore}/g,
+              getActivityScore(geneData.gene, geneData.genotype)
+            )
+            .replace(/{interpretation}/g, displayInterpretation);
+
+          parts[5] = processedValue;
+          finalTemplate = parts.join("|");
+        }
+      }
+    } else {
+      // Use default/empty values if gene data not provided
+      finalTemplate = finalTemplate
+        .replace(/{obxRunNumber}/g, templateRow.obxRunNumber.toString())
+        .replace(/{geneSectionRunNumber}/g, templateRow.geneSectionRunNumber)
+        .replace(/{genotype}/g, "")
+        .replace(/{phenotype}/g, "")
+        .replace(/{activityScore}/g, "")
+        .replace(/{interpretation}/g, "");
+
+      // Handle variable values with empty data
+      if (templateRow.variableValue) {
+        const parts = finalTemplate.split("|");
+        if (parts.length >= 6) {
+          parts[5] = "";
+          finalTemplate = parts.join("|");
+        }
+      }
+    }
+
+    obxSegments.push(finalTemplate);
+  });
+
+  console.log(`Generated ${obxSegments.length} OBX segments (should be 102)`);
   return obxSegments;
 }
 
@@ -1238,7 +1700,10 @@ export function buildHL7Message(data: any): string {
 
   if (data.pgxPanel && data.pgxPanel.length > 0) {
     console.log("Processing PGX Panel:", data.pgxPanel);
-    obxSegments = generateOBXSegmentsForGenes(data.pgxPanel);
+    obxSegments = generateOBXSegmentsForGenes(data.pgxPanel); // ✅ Changed function name
+  } else {
+    // Generate empty templates if no pgxPanel data
+    obxSegments = generateOBXSegmentsForGenes([]); // ✅ Generate all with empty data
   }
 
   console.log("Generated OBX Segments:", obxSegments);
