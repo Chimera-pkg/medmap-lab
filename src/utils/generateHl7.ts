@@ -1493,48 +1493,44 @@ function generateOBXSegmentsForGenes(
         );
       }
 
-      // ✅ Format phenotype for display
       let displayPhenotype = geneData.phenotype;
       if (templateRow.geneName.startsWith("HLA-")) {
         // For HLA genes, phenotype should be "Negative" or "Positive"
         displayPhenotype = geneData.phenotype;
       } else {
-        // For other genes, normalize phenotype to function-based terms
-        const phenotypeLower = displayPhenotype.toLowerCase();
-
-        // Handle metabolizer terms - convert to function terms
+        // ✅ ONLY normalize specific genes - ABCG2 and SLCO1B1
         if (
-          phenotypeLower.includes("normal metabolizer") ||
-          phenotypeLower.includes("normal function")
+          templateRow.geneName === "ABCG2" ||
+          templateRow.geneName === "SLCO1B1"
         ) {
-          displayPhenotype = "Normal function";
-        } else if (
-          phenotypeLower.includes("poor metabolizer") ||
-          phenotypeLower.includes("poor function")
-        ) {
-          displayPhenotype = "Poor function";
-        } else if (
-          phenotypeLower.includes("intermediate metabolizer") ||
-          phenotypeLower.includes("intermediate function") ||
-          phenotypeLower.includes("decreased function")
-        ) {
-          displayPhenotype = "Intermediate function";
-        } else if (
-          phenotypeLower.includes("rapid metabolizer") ||
-          phenotypeLower.includes("increased function")
-        ) {
-          displayPhenotype = "Increased function";
-        } else if (
-          phenotypeLower.includes("ultrarapid metabolizer") ||
-          phenotypeLower.includes("ultrarapid function")
-        ) {
-          displayPhenotype = "Ultrarapid function";
-        } else if (phenotypeLower.includes("no function")) {
-          displayPhenotype = "No function";
+          const phenotypeLower = displayPhenotype.toLowerCase();
+          if (
+            phenotypeLower.includes("normal") &&
+            (phenotypeLower.includes("function") ||
+              phenotypeLower.includes("metabolizer"))
+          ) {
+            displayPhenotype = "Normal function";
+          } else if (
+            phenotypeLower.includes("poor") &&
+            (phenotypeLower.includes("function") ||
+              phenotypeLower.includes("metabolizer"))
+          ) {
+            displayPhenotype = "Poor function";
+          } else if (
+            phenotypeLower.includes("intermediate") &&
+            (phenotypeLower.includes("function") ||
+              phenotypeLower.includes("metabolizer"))
+          ) {
+            displayPhenotype = "Intermediate function";
+          }
+        }
+        // ✅ For ALL OTHER genes, keep the original phenotype unchanged
+        else {
+          displayPhenotype = geneData.phenotype; // Keep original
         }
 
         console.log(
-          `🔧 Phenotype normalized: "${geneData.phenotype}" -> "${displayPhenotype}"`
+          `🔧 Phenotype for ${templateRow.geneName}: "${geneData.phenotype}" -> "${displayPhenotype}"`
         );
       }
       // ✅ Get interpretation for HLA genes
