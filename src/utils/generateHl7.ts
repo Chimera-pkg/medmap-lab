@@ -1295,6 +1295,7 @@ function getActivityScore(gene: string, genotype: string): string {
       "*1/*4": "1^2",
       "*2/*2": "1^1",
       "*4/*4": "0^0",
+      "*1/*36-*10": "1.25^1.25", // Add missing genotype
     },
     DPYD: {
       "*1/*1": "2^2",
@@ -1329,7 +1330,7 @@ function getHLAInterpretation(gene: string, phenotype: string): string {
 
   return (
     interpretationMap[gene]?.[phenotype] ||
-    "No specific interpretation available"
+    "No increased risk of carbamazepine hypersensitivity"
   );
 }
 
@@ -1443,9 +1444,13 @@ function generateOBXSegmentsForGenes(
           processedData.interpretation = "No specific interpretation available";
         }
       }
+    } else {
+      // ✅ For non-HLA genes, keep the original phenotype and interpretation
+      processedData.phenotype = inputGene.phenotype;
+      processedData.interpretation = (inputGene as any).interpretation || "";
 
       console.log(
-        `🧬 HLA Processing: ${normalizedGeneName} -> Phenotype: "${processedData.phenotype}", Interpretation: "${processedData.interpretation}"`
+        `🔧 Non-HLA Processing: ${normalizedGeneName} -> Phenotype: "${processedData.phenotype}"`
       );
     }
 
@@ -1477,6 +1482,15 @@ function generateOBXSegmentsForGenes(
         console.log(
           `🔧 ABCG2 genotype converted: "${geneData.genotype}" -> "${displayGenotype}"`
         );
+      } else if (
+        templateRow.geneName === "VKORC1" &&
+        displayGenotype.includes("-1639")
+      ) {
+        // Convert -1639A/A to A/A
+        displayGenotype = displayGenotype.replace(/-1639/g, "");
+        console.log(
+          `🔧 VKORC1 genotype converted: "${geneData.genotype}" -> "${displayGenotype}"`
+        );
       }
 
       // ✅ Format phenotype for display
@@ -1485,21 +1499,65 @@ function generateOBXSegmentsForGenes(
         // For HLA genes, phenotype should be "Negative" or "Positive"
         displayPhenotype = geneData.phenotype;
       } else {
-        // For other genes, normalize phenotype
+        // For other genes, normalize phenotype to function-based terms
+        const phenotypeLower = displayPhenotype.toLowerCase();
+
+        // Handle metabolizer terms - convert to function terms
         if (
-          displayPhenotype.toLowerCase().includes("normal") &&
-          displayPhenotype.toLowerCase().includes("function")
+          phenotypeLower.includes("normal metabolizer") ||
+          phenotypeLower.includes("normal function")
         ) {
           displayPhenotype = "Normal function";
+        } else if (
+          phenotypeLower.includes("poor metabolizer") ||
+          phenotypeLower.includes("poor function")
+        ) {
+          displayPhenotype = "Poor function";
+        } else if (
+          phenotypeLower.includes("intermediate metabolizer") ||
+          phenotypeLower.includes("intermediate function") ||
+          phenotypeLower.includes("decreased function")
+        ) {
+          displayPhenotype = "Intermediate function";
+        } else if (
+          phenotypeLower.includes("rapid metabolizer") ||
+          phenotypeLower.includes("increased function")
+        ) {
+          displayPhenotype = "Increased function";
+        } else if (
+          phenotypeLower.includes("ultrarapid metabolizer") ||
+          phenotypeLower.includes("ultrarapid function")
+        ) {
+          displayPhenotype = "Ultrarapid function";
+        } else if (phenotypeLower.includes("no function")) {
+          displayPhenotype = "No function";
         }
-      }
 
+        console.log(
+          `🔧 Phenotype normalized: "${geneData.phenotype}" -> "${displayPhenotype}"`
+        );
+      }
       // ✅ Get interpretation for HLA genes
       let displayInterpretation = "";
       if (templateRow.geneName.startsWith("HLA-")) {
         displayInterpretation =
           geneData.interpretation ||
           getHLAInterpretation(templateRow.geneName, geneData.phenotype);
+      } else if (templateRow.geneName === "VKORC1") {
+        // Special handling for VKORC1 interpretation
+        if (
+          geneData.genotype?.includes("A/A") ||
+          geneData.genotype?.includes("-1639A/A")
+        ) {
+          displayInterpretation = "High warfarin sensitivity";
+        } else if (
+          geneData.genotype?.includes("G/G") ||
+          geneData.genotype?.includes("-1639G/G")
+        ) {
+          displayInterpretation = "Normal warfarin sensitivity";
+        } else {
+          displayInterpretation = "Intermediate warfarin sensitivity";
+        }
       }
 
       // Replace placeholders
