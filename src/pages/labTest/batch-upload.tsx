@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Upload, Button, message, Card, Space, Table, Progress, Alert, Modal } from "antd";
+import { Upload, Button, message, Card, Space, Table, Progress, Alert, Modal, Form, Select } from "antd";
 import { UploadOutlined, CloudUploadOutlined, FileExcelOutlined, FileTextOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
@@ -48,19 +48,6 @@ interface PatientData {
   sampleFile?: string;
 }
 
-// interface LabTestResult {
-//   sampleReferenceNumber: string;
-//   drugName: string;
-//   geneName: string;
-//   genoType: string;
-//   phenoType: string;
-//   drugResponseToxicity: string;
-//   drugResponseDosage: string;
-//   drugResponseEfficacy: string;
-//   evidence: string;
-//   clinicalAnnotation: string;
-// }
-
 interface LabTestResult {
   sampleReferenceNumber: string;
   drugName: string;
@@ -89,10 +76,74 @@ interface BatchUploadData {
   uploadStatus: 'idle' | 'processing' | 'success' | 'error';
   progress: number;
   currentProcessingItem: string;
+  selectedPanel: string;
+  selectedGenes?: string[];
 }
+
+
+
 
 export const BatchUpload: React.FC = () => {
   const navigate = useNavigate();
+
+  const [availablePanels] = useState([
+  { 
+    value: '16genes', 
+    label: '16 Genes Panel',
+    genes: [
+      'ABCG2',
+      'CYP2C19',
+      'CYP2C9',
+      'CYP2D6',
+      'CYP3A5',
+      'CYP4F2',
+      'DPYD',
+      'HLA-A',
+      'HLA-B-15-02',
+      'HLA-B-57-01',
+      'HLA-B-58-01',
+      'NUDT15',
+      'SLCO1B1',
+      'TPMT',
+      'UGT1A1',
+      'VKORC1'
+    ]
+  },
+  { 
+    value: '8genes', 
+    label: '8 Genes Panel',
+    genes: [
+      'CYP2C19',
+      'CYP2C9',
+      'CYP2D6',
+      'CYP3A5',
+      'DPYD',
+      'SLCO1B1',
+      'TPMT',
+      'VKORC1'
+    ]
+  },
+  { 
+    value: 'hla_genes', 
+    label: 'HLA Genes Panel',
+    genes: [
+      'HLA-A',
+      'HLA-B-15-02',
+      'HLA-B-57-01',
+      'HLA-B-58-01'
+    ]
+  }
+]);
+
+  const handlePanelChange = (value: string) => {
+  const selectedPanelConfig = availablePanels.find(p => p.value === value);
+  setBatchData(prev => ({ 
+    ...prev, 
+    selectedPanel: value,
+    selectedGenes: selectedPanelConfig?.genes || []
+  }));
+};
+
   const [batchData, setBatchData] = useState<BatchUploadData>({
     patientFile: null,
     labResultFile: null,
@@ -102,8 +153,13 @@ export const BatchUpload: React.FC = () => {
     validationErrors: [],
     uploadStatus: 'idle',
     progress: 0,
-    currentProcessingItem: ''
+    currentProcessingItem: '',
+    selectedPanel: '16genes', // Default to 16 genes panel
+    selectedGenes: availablePanels[0].genes // Default to 16 genes panel
   });
+
+  
+
 
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [successModalVisible, setSuccessModalVisible] = useState(false);
@@ -842,7 +898,7 @@ export const BatchUpload: React.FC = () => {
 
     // Create FormData object
     const formData = new FormData();
-    
+    formData.append("panel_template", batchData.selectedPanel);
     // Add files
     const sanitizedPatientName = patientName.replace(/\s+/g, "_");
     formData.append("report_download_pdf", pdfBlob, `${sanitizedPatientName}_Report.pdf`);
@@ -1075,6 +1131,24 @@ export const BatchUpload: React.FC = () => {
     <div style={{ padding: '24px' }}>
       <Card title="Batch Upload Lab Tests" style={{ marginBottom: '24px' }}>
         <Space direction="vertical" style={{ width: '100%' }}>
+          <Form.Item
+            label="Select Gene Panel"
+            required
+            tooltip="Select the gene panel mapping template"
+          >
+          <Select
+            value={batchData.selectedPanel}
+            onChange={handlePanelChange}
+            style={{ width: 200 }}
+            options={availablePanels.map(panel => ({
+              value: panel.value,
+              label: `${panel.label} (${panel.genes.length} genes)`
+            }))}
+          />
+          <div style={{ marginTop: 8, fontSize: 12, color: '#666' }}>
+            Genes included: {batchData.selectedGenes?.join(', ')}
+          </div>
+        </Form.Item>
           <Alert
             message="Upload Requirements"
             description="Please upload exactly 2 files: 1 Patient List file (.csv/.xlsx) and 1 Lab Test Results file (.txt)"
