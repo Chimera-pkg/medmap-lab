@@ -9,3 +9,20 @@ export interface IPost {
   status: "published" | "draft" | "rejected";
   category: { id: number };
 }
+
+export interface ILabTest {
+  patient_name: string;
+  test_case_id: string;
+  physician_name: string;
+  disease: string;
+  specimen_type: string;
+  report_status: string;
+}
+
+export interface AuthProvider {
+  login: (params: any) => Promise<{ success: boolean; redirectTo?: string }>;
+  logout: () => Promise<{ success: boolean; redirectTo?: string }>;
+  check: () => Promise<{ authenticated: boolean; redirectTo?: string }>;
+  getIdentity?: () => Promise<any>;
+  getPermissions?: () => Promise<any>;
+}

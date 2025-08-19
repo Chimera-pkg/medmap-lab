@@ -3,18 +3,18 @@ import {
   Refine,
   type AuthProvider,
   Authenticated,
+  OnErrorResponse,
 } from "@refinedev/core";
 import {
   useNotificationProvider,
   ThemedLayoutV2,
   ErrorComponent,
-  AuthPage,
   RefineThemes,
 } from "@refinedev/antd";
 import {
-  GoogleOutlined,
-  GithubOutlined,
-  DashboardOutlined,
+  TableOutlined,
+  FileAddOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 
 import dataProvider from "@refinedev/simple-rest";
@@ -29,140 +29,96 @@ import { App as AntdApp, ConfigProvider } from "antd";
 
 import "@refinedev/antd/dist/reset.css";
 
-import { PostList, PostEdit, PostShow } from "./pages/overview";
-import { DashboardPage } from "../src/pages/dashboard";
+import { PostList, PostEdit, PostShow, PostCreate, BatchUpload } from "./pages/labTest";
+import { DashboardPage } from "./pages/dashboard";
+import PdfViewer from "./pages/viewers/pdf-viewer";
+import Hl7Viewer from "./pages/viewers/hl7-viewer";
+import Login from "./auth/login";
+import Register from "./auth/register";
+import { API_URL } from "./config";
+import { CustomLayout } from "./components/layout/Layout";
+import { WebApiList } from "./pages/webApi";
+import { WebApiDocumentation } from "./pages/webApi/documentation";
 
-const API_URL = "https://api.fake-rest.refine.dev";
 
-/**
- *  mock auth credentials to simulate authentication
- */
-const authCredentials = {
-  email: "demo@refine.dev",
-  password: "demodemo",
-};
 
 const App: React.FC = () => {
   const authProvider: AuthProvider = {
-    login: async ({ providerName, email }) => {
-      if (providerName === "google") {
-        window.location.href = "https://accounts.google.com/o/oauth2/v2/auth";
-        return {
-          success: true,
-        };
-      }
+    login: async ({ email, password }) => {
+      try {
+        const response = await fetch(`${API_URL}/auth/login`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password }),
+        });
 
-      if (providerName === "github") {
-        window.location.href = "https://github.com/login/oauth/authorize";
-        return {
-          success: true,
-        };
-      }
+        if (!response.ok) {
+          throw new Error("Login failed");
+        }
 
-      if (email === authCredentials.email) {
-        localStorage.setItem("email", email);
+        const { token } = await response.json();
+        localStorage.setItem("authToken", token);
+
         return {
           success: true,
           redirectTo: "/",
         };
-      }
-
-      return {
-        success: false,
-        error: {
-          message: "Login failed",
-          name: "Invalid email or password",
-        },
-      };
-    },
-    register: async (params) => {
-      if (params.email === authCredentials.email && params.password) {
-        localStorage.setItem("email", params.email);
+      } catch (error) {
         return {
-          success: true,
-          redirectTo: "/",
+          success: false,
+          error: {
+            message: "Login failed",
+            name: "Invalid email or password",
+          },
         };
       }
-      return {
-        success: false,
-        error: {
-          message: "Register failed",
-          name: "Invalid email or password",
-        },
-      };
-    },
-    updatePassword: async (params) => {
-      if (params.password === authCredentials.password) {
-        //we can update password here
-        return {
-          success: true,
-        };
-      }
-      return {
-        success: false,
-        error: {
-          message: "Update password failed",
-          name: "Invalid password",
-        },
-      };
-    },
-    forgotPassword: async (params) => {
-      if (params.email === authCredentials.email) {
-        //we can send email with reset password link here
-        return {
-          success: true,
-        };
-      }
-      return {
-        success: false,
-        error: {
-          message: "Forgot password failed",
-          name: "Invalid email",
-        },
-      };
     },
     logout: async () => {
-      localStorage.removeItem("email");
+      localStorage.removeItem("authToken");
       return {
         success: true,
-        redirectTo: "/login",
+        redirectTo: "/auth/login",
       };
     },
-    onError: async (error) => {
-      if (error.response?.status === 401) {
+    check: async () => {
+      const token = localStorage.getItem("authToken");
+      if (token) {
         return {
-          logout: true,
+          authenticated: true,
         };
       }
-
-      return { error };
+      return {
+        authenticated: false,
+        error: {
+          message: "Check failed",
+          name: "Not authenticated",
+        },
+        logout: true,
+        redirectTo: "/auth/login",
+      };
     },
-    check: async () =>
-      localStorage.getItem("email")
-        ? {
-            authenticated: true,
-          }
-        : {
-            authenticated: false,
-            error: {
-              message: "Check failed",
-              name: "Not authenticated",
-            },
-            logout: true,
-            redirectTo: "/login",
-          },
-    getPermissions: async (params) => params?.permissions,
-    getIdentity: async () => ({
-      id: 1,
-      name: "Jane Doe",
-      avatar:
-        "https://unsplash.com/photos/IWLOvomUmWU/download?force=true&w=640",
-    }),
+    getIdentity: async () => {
+      const token = localStorage.getItem("authToken");
+      const name = localStorage.getItem("userName");
+      if (token) {
+        return {
+          id: 1,
+          name: name || "User",
+          avatar: "https://unsplash.com/photos/IWLOvomUmWU/download?force=true&w=640",
+        };
+      }
+      return null;
+    },
+    getPermissions: async () => null,
+    onError: function (error: any): Promise<OnErrorResponse> {
+      throw new Error("Function not implemented.");
+    }
   };
 
   return (
     <BrowserRouter>
-      <GitHubBanner />
       <ConfigProvider theme={RefineThemes.Blue}>
         <AntdApp>
           <Refine
@@ -170,25 +126,23 @@ const App: React.FC = () => {
             dataProvider={dataProvider(API_URL)}
             routerProvider={routerProvider}
             resources={[
+           
               {
-                name: "dashboard",
-                list: "/",
+                name: "lab-tests",
+                list: "/lab-tests",
+                show: "/lab-tests/show/:id",
+                edit: "/lab-tests/edit/:id",
+                // create: "/lab-tests/create",
+                icon: <FileAddOutlined />,
+              },
+              {
+                name: "web-api",
+                list: "/web-api",
+                show: "/web-api/documentation",
                 meta: {
-                  label: "Dashboard",
-                  icon: <DashboardOutlined />,
+                  label: "Web API", // Pastikan tidak ada spasi tambahan atau karakter yang tidak terlihat
+                  icon: <FileTextOutlined />,
                 },
-              },
-              {
-                name: "posts",
-                list: "/posts",
-                show: "/posts/show/:id",
-                edit: "/posts/edit/:id",
-              },
-              {
-                name: "lab-test",
-                list: "/lab-test",
-                show: "/lab-test/show/:id",
-                edit: "/lab-test/edit/:id",
               },
             ]}
             notificationProvider={useNotificationProvider}
@@ -204,117 +158,40 @@ const App: React.FC = () => {
                     key="authenticated-routes"
                     fallback={<CatchAllNavigate to="/login" />}
                   >
-                    <ThemedLayoutV2>
+                    <CustomLayout>
                       <Outlet />
-                    </ThemedLayoutV2>
+                    </CustomLayout>
                   </Authenticated>
                 }
               >
                 <Route index element={<DashboardPage />} />
+                <Route path="/pdf-viewer" element={<PdfViewer />} />
+                <Route path="/hl7-viewer" element={<Hl7Viewer />} />
 
-                <Route path="/posts">
+                <Route path="/lab-tests">
                   <Route index element={<PostList />} />
                   <Route path="edit/:id" element={<PostEdit />} />
                   <Route path="show/:id" element={<PostShow />} />
+                  <Route path="create" element={<PostCreate />} />
+                  <Route path="batch-upload" element={<BatchUpload />} />
                 </Route>
+                {/* WEB API PATH */}
+                <Route path="/web-api" element={<WebApiList />} />
+                  <Route index element={<PostList />} />
+
               </Route>
 
-              <Route
-                element={
-                  <Authenticated key="auth-pages" fallback={<Outlet />}>
-                    <NavigateToResource resource="posts" />
-                  </Authenticated>
-                }
-              >
-                <Route
-                  path="/login"
-                  element={
-                    <AuthPage
-                      type="login"
-                      formProps={{
-                        initialValues: {
-                          ...authCredentials,
-                        },
-                      }}
-                      providers={[
-                        {
-                          name: "google",
-                          label: "Sign in with Google",
-                          icon: (
-                            <GoogleOutlined
-                              style={{
-                                fontSize: 24,
-                                lineHeight: 0,
-                              }}
-                            />
-                          ),
-                        },
-                        {
-                          name: "github",
-                          label: "Sign in with GitHub",
-                          icon: (
-                            <GithubOutlined
-                              style={{
-                                fontSize: 24,
-                                lineHeight: 0,
-                              }}
-                            />
-                          ),
-                        },
-                      ]}
-                    />
-                  }
-                />
-                <Route
-                  path="/register"
-                  element={
-                    <AuthPage
-                      type="register"
-                      providers={[
-                        {
-                          name: "google",
-                          label: "Sign in with Google",
-                          icon: (
-                            <GoogleOutlined
-                              style={{
-                                fontSize: 24,
-                                lineHeight: 0,
-                              }}
-                            />
-                          ),
-                        },
-                        {
-                          name: "github",
-                          label: "Sign in with GitHub",
-                          icon: (
-                            <GithubOutlined
-                              style={{
-                                fontSize: 24,
-                                lineHeight: 0,
-                              }}
-                            />
-                          ),
-                        },
-                      ]}
-                    />
-                  }
-                />
-                <Route
-                  path="/forgot-password"
-                  element={<AuthPage type="forgotPassword" />}
-                />
-                <Route
-                  path="/update-password"
-                  element={<AuthPage type="updatePassword" />}
-                />
-              </Route>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/web-api/documentation" element={<WebApiDocumentation />} />
+              
 
               <Route
                 element={
                   <Authenticated key="catch-all">
-                    <ThemedLayoutV2>
+                    <CustomLayout>
                       <Outlet />
-                    </ThemedLayoutV2>
+                    </CustomLayout>
                   </Authenticated>
                 }
               >
