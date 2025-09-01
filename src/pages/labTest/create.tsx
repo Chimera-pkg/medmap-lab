@@ -3,7 +3,8 @@ import { Form, Input, Select, DatePicker, Upload, Button, Row, Col, notification
 import MDEditor from "@uiw/react-md-editor";
 import { UploadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { generateReportBlob } from "../../utils/generateReport";
+// import { generateReportBlob } from "../../utils/generateReport";
+import { generateReport } from "../../utils/generateReport";
 import { API_URL } from "../../config";
 import { useNavigate } from "react-router-dom";
 import { buildHL7Message } from "../../utils/generateHl7";

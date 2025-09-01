@@ -9,7 +9,6 @@ export async function blobToBase64(blob: Blob): Promise<string> {
     const reader = new FileReader();
     reader.onloadend = () => {
       const result = reader.result as string;
-      // Remove data:application/pdf;base64, prefix
       const base64 = result.split(",")[1] || "";
       resolve(base64);
     };
@@ -130,29 +129,6 @@ export async function cmxGetDocDetails(userId: string, id: string) {
   }
 }
 
-// Upload block information
-export async function cmxUploadBlock(id: string, block: string) {
-  try {
-    const response = await fetch(`${CHAINMARKX_BASE_URL}/data/${id}/block`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ block }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Block upload failed: ${response.status}`);
-    }
-
-    const result = await response.json();
-    console.log("Block uploaded:", result);
-    return result;
-  } catch (error) {
-    console.error("Block upload error:", error);
-    throw error;
-  }
-}
-
 // Export PDF dengan watermark
 export async function cmxExportPdf(id: string): Promise<Blob> {
   try {
@@ -249,7 +225,6 @@ export async function testChainMarkXWorkflow(pdfBlob: Blob, fileName: string) {
     console.error("❌ ChainMarkX Test Workflow Failed:", error);
     return {
       success: false,
-      error: error.message,
     };
   }
 }
