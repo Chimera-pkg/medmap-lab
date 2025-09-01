@@ -1,11 +1,112 @@
 import { PDFDocument, rgb, StandardFonts, PDFPage } from "pdf-lib";
 import { saveAs } from "file-saver";
+import {
+  cmxUploadDocument,
+  cmxEncodeDocument,
+  cmxGetDocDetails,
+  cmxExportPdf,
+  blobToBase64,
+  CHAINMARKX_USER_ID,
+} from "./chainmarkx";
 
-// Function to generate and download report PDF
+// Generate, kirim ke ChainMarkX untuk distamp (encode), lalu download hasil export (sudah ada QR)
 export async function generateReport(data: any, fileName: string) {
   const blob = await generatePDF(data);
-  saveAs(blob, fileName);
-  return blob;
+
+  try {
+    // 1) PDF -> base64
+    const base64Content = await blobToBase64(blob);
+
+    // 2) Upload
+    const upload = await cmxUploadDocument({
+      file_name: fileName,
+      content: base64Content,
+      owner: CHAINMARKX_USER_ID,
+      user: CHAINMARKX_USER_ID,
+    });
+
+    // 3) Encode watermark
+    await cmxEncodeDocument(upload.data.id);
+
+    // 4) Export PDF ber-watermark
+    const stampedPdf = await cmxExportPdf(upload.data.id);
+
+    // (Opsional) Ambil hash/block utk log/metadata
+    const details = await cmxGetDocDetails(CHAINMARKX_USER_ID, upload.data.id);
+
+    // Simpan hasil export (yang sudah ada QR dari API)
+    saveAs(stampedPdf, `blockchain_${fileName}`);
+
+    return {
+      blob: stampedPdf,
+      blockchainInfo: {
+        documentId: upload.data.id,
+        hash: upload.data.hash,
+        block: details.data.block,
+      },
+    };
+  } catch (e) {
+    console.error("❌ Blockchain integration failed:", e);
+    // Fallback: file original tanpa watermark
+    saveAs(blob, fileName);
+    return { blob, blockchainInfo: null };
+  }
+}
+
+// Function to generate PDF with blockchain and return exported version
+export async function generateReportWithBlockchain(
+  data: any,
+  fileName: string
+) {
+  const blob = await generatePDF(data);
+
+  try {
+    // Convert PDF to base64
+    const base64Content = await blobToBase64(blob);
+
+    // Upload to ChainMarkX
+    const uploadResult = await cmxUploadDocument({
+      file_name: fileName,
+      content: base64Content,
+      owner: CHAINMARKX_USER_ID,
+      user: CHAINMARKX_USER_ID,
+    });
+
+    // Encode watermark
+    await cmxEncodeDocument(uploadResult.data.id);
+
+    // Get exported PDF with watermark
+    const exportedPdfBlob = await cmxExportPdf(uploadResult.data.id);
+
+    // Get document details
+    const details = await cmxGetDocDetails(
+      CHAINMARKX_USER_ID,
+      uploadResult.data.id
+    );
+
+    console.log("Blockchain details:", {
+      documentId: uploadResult.data.id,
+      hash: uploadResult.data.hash,
+      block: details.data.block,
+    });
+
+    // Download exported PDF with watermark
+    saveAs(exportedPdfBlob, `blockchain_${fileName}`);
+
+    return {
+      blob: exportedPdfBlob,
+      blockchainInfo: {
+        documentId: uploadResult.data.id,
+        hash: uploadResult.data.hash,
+        block: details.data.block,
+      },
+    };
+  } catch (error) {
+    console.error("Blockchain integration failed:", error);
+    // Fallback: download original PDF
+    saveAs(blob, fileName);
+    return { blob, blockchainInfo: null };
+  }
 }
 
 // Function to generate PDF blob without downloading
@@ -609,3 +710,9 @@ async function generatePDF(data: any) {
 }
 
 export default generatePDF;
+
+async function fetchAsUint8Array(url: string) {
+  const res = await fetch(url);
+  const buf = await res.arrayBuffer();
+  return new Uint8Array(buf);
+}
