@@ -39,7 +39,7 @@ import { API_URL } from "./config";
 import { CustomLayout } from "./components/layout/Layout";
 import { WebApiList } from "./pages/webApi";
 import { WebApiDocumentation } from "./pages/webApi/documentation";
-
+import VerifyPage from './pages/viewers/verify';
 
 
 const App: React.FC = () => {
@@ -167,6 +167,7 @@ const App: React.FC = () => {
                 <Route index element={<DashboardPage />} />
                 <Route path="/pdf-viewer" element={<PdfViewer />} />
                 <Route path="/hl7-viewer" element={<Hl7Viewer />} />
+                <Route path="/verify" element={<VerifyPage />} />
 
                 <Route path="/lab-tests">
                   <Route index element={<PostList />} />
