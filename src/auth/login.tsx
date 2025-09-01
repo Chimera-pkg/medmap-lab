@@ -3,6 +3,7 @@ import { UserOutlined, LockOutlined, EyeTwoTone, EyeInvisibleOutlined } from "@a
 import { API_URL } from "../config";
 import { Alert, Button, Checkbox, Form, Input } from "antd";
 import { Link } from "react-router-dom";
+import { cmxLogin } from "../utils/chainmarkx"; // Tambahkan import
 
 const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -17,6 +18,8 @@ const Login: React.FC = () => {
     setError("");
     try {
       console.log("Attempting login with:", values.email);
+      
+      // Login ke app utama
       const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -31,7 +34,14 @@ const Login: React.FC = () => {
       const { token, user } = await response.json();
       localStorage.setItem("authToken", token);
       localStorage.setItem("userName", user.username);
-      localStorage.setItem("authToken", token);
+      
+      // Login ke ChainMarkX (opsional, bisa skip jika gagal)
+      try {
+        await cmxLogin(values.email, values.password);
+        console.log("ChainMarkX login successful");
+      } catch (cmxError) {
+        console.warn("ChainMarkX login failed, continuing without blockchain:", cmxError);
+      }
       
       // Save email if remember me is checked
       if (rememberMe) {
