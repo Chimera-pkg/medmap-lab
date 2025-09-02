@@ -16,6 +16,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      "/chainmarkx": {
+        target: "https://backend.chainmarkx.cognidex.ai",
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/chainmarkx/, ""),
+      },
     },
   },
 });
