@@ -21,6 +21,14 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/chainmarkx/, ""),
+        configure: (proxy, _options) => {
+          proxy.on("proxyReq", (proxyReq, req, _res) => {
+            console.log("Proxy request:", req.method, req.url);
+          });
+          proxy.on("proxyRes", (proxyRes, req, _res) => {
+            console.log("Proxy response:", proxyRes.statusCode, req.url);
+          });
+        },
       },
     },
   },

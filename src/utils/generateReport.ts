@@ -10,144 +10,188 @@ import {
 } from "./chainmarkx";
 
 // Function to generate PDF blob without downloading - WITH BLOCKCHAIN INTEGRATION
+// export async function generateReportBlob(data: any) {
+//   const blob = await generatePDF(data);
+
+//   try {
+//     console.log("🔄 Starting blockchain integration...");
+
+//     // 1) PDF -> base64
+//     const base64Content = await blobToBase64(blob);
+
+//     // 2) Upload
+//     const upload = await cmxUploadDocument({
+//       file_name: `lab_report_${Date.now()}.pdf`,
+//       content: base64Content,
+//       owner: CHAINMARKX_USER_ID,
+//       user: CHAINMARKX_USER_ID,
+//     });
+
+//     console.log("✅ Document uploaded:", upload.data.id);
+
+//     // 3) Encode watermark
+//     await cmxEncodeDocument(upload.data.id);
+//     console.log("✅ Document encoded");
+
+//     // 4) Get details
+//     const details = await cmxGetDocDetails(CHAINMARKX_USER_ID, upload.data.id);
+//     console.log("✅ Document details retrieved");
+
+//     // 5) Generate verification URL
+//     const verifyUrl = `${window.location.origin}/verify?doc=${upload.data.id}&hash=${upload.data.hash}&block=${details.data.block}`;
+//     console.log("🔗 Verification URL:", verifyUrl);
+
+//     // 6) Embed blockchain info ke PDF original
+//     const pdfDoc = await PDFDocument.load(await blob.arrayBuffer());
+
+//     // Tambahkan blockchain stamp di halaman terakhir
+//     const pages = pdfDoc.getPages();
+//     const lastPage = pages[pages.length - 1];
+//     const { width, height } = lastPage.getSize();
+
+//     // Font untuk stamp
+//     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+//     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+//     // Background box untuk stamp
+//     const stampWidth = 400;
+//     const stampHeight = 120;
+//     const stampX = width - stampWidth - 50;
+//     const stampY = 50;
+
+//     // Background rectangle
+//     lastPage.drawRectangle({
+//       x: stampX,
+//       y: stampY,
+//       width: stampWidth,
+//       height: stampHeight,
+//       color: rgb(0.95, 0.95, 0.95),
+//       borderColor: rgb(0.2, 0.2, 0.2),
+//       borderWidth: 1,
+//     });
+
+//     // Title -- INI BAGIAN YANG DIPERBAIKI --
+//     lastPage.drawText("BLOCKCHAIN VERIFICATION", {
+//       // Emoji "🔗" dihapus
+//       x: stampX + 10,
+//       y: stampY + stampHeight - 20,
+//       size: 12,
+//       font: fontBold,
+//       color: rgb(0, 0, 0),
+//     });
+
+//     // Document ID
+//     lastPage.drawText(`Document ID: ${upload.data.id}`, {
+//       x: stampX + 10,
+//       y: stampY + stampHeight - 40,
+//       size: 10,
+//       font: font,
+//       color: rgb(0, 0, 0),
+//     });
+
+//     // Hash
+//     lastPage.drawText(`Hash: ${upload.data.hash.substring(0, 30)}...`, {
+//       // Sedikit diperpanjang agar lebih informatif
+//       x: stampX + 10,
+//       y: stampY + stampHeight - 55,
+//       size: 10,
+//       font: font,
+//       color: rgb(0, 0, 0),
+//     });
+
+//     // Block
+//     lastPage.drawText(`Block: ${details.data.block}`, {
+//       x: stampX + 10,
+//       y: stampY + stampHeight - 70,
+//       size: 10,
+//       font: font,
+//       color: rgb(0, 0, 0),
+//     });
+
+//     // Verification URL
+//     lastPage.drawText(`Verify at: ${verifyUrl}`, {
+//       // Sedikit diubah agar lebih jelas
+//       x: stampX + 10,
+//       y: stampY + stampHeight - 85,
+//       size: 8,
+//       font: font,
+//       color: rgb(0.5, 0.5, 0.5),
+//     });
+
+//     // Timestamp
+//     const timestamp = new Date().toLocaleString("id-ID"); // Format waktu lebih ramah dibaca
+//     lastPage.drawText(`Generated: ${timestamp}`, {
+//       x: stampX + 10,
+//       y: stampY + stampHeight - 100,
+//       size: 8,
+//       font: font,
+//       color: rgb(0.5, 0.5, 0.5),
+//     });
+
+//     console.log("✅ Blockchain stamp embedded in PDF");
+
+//     // 7) Save PDF dengan stamp
+//     const pdfWithStampBytes = await pdfDoc.save();
+//     const pdfWithStampBlob = new Blob([pdfWithStampBytes], {
+//       type: "application/pdf",
+//     });
+
+//     console.log("✅ PDF with blockchain stamp created");
+
+//     // Log blockchain info untuk debugging
+//     console.log(" Blockchain Info:", {
+//       documentId: upload.data.id,
+//       hash: upload.data.hash,
+//       block: details.data.block,
+//       verifyUrl: verifyUrl,
+//     });
+
+//     return pdfWithStampBlob;
+//   } catch (e) {
+//     console.error("❌ Blockchain integration failed:", e);
+//     console.log("📄 Falling back to regular PDF without blockchain");
+//     // Fallback: return PDF tanpa blockchain
+//     return blob;
+//   }
+// }
+
 export async function generateReportBlob(data: any) {
   const blob = await generatePDF(data);
 
   try {
-    console.log("🔄 Starting blockchain integration...");
+    console.log("🔄 Starting PDF watermarking...");
 
-    // 1) PDF -> base64
+    // 1) Convert PDF to base64
     const base64Content = await blobToBase64(blob);
 
-    // 2) Upload
-    const upload = await cmxUploadDocument({
-      file_name: `lab_report_${Date.now()}.pdf`,
-      content: base64Content,
-      owner: CHAINMARKX_USER_ID,
-      user: CHAINMARKX_USER_ID,
-    });
+    // 2) Send to watermarking endpoint
+    const response = await fetch(
+      "/chainmarkx/user/admin@mail.com/profile/export",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/pdf",
+        },
+        body: JSON.stringify({
+          block: "9",
+          pdf_path: base64Content,
+        }),
+      }
+    );
 
-    console.log("✅ Document uploaded:", upload.data.id);
+    if (!response.ok) {
+      throw new Error(`Watermarking failed: ${response.status}`);
+    }
 
-    // 3) Encode watermark
-    await cmxEncodeDocument(upload.data.id);
-    console.log("✅ Document encoded");
+    // 3) Get watermarked PDF directly from response
+    const watermarkedPdfBlob = await response.blob();
+    console.log("✅ PDF watermarked successfully");
 
-    // 4) Get details
-    const details = await cmxGetDocDetails(CHAINMARKX_USER_ID, upload.data.id);
-    console.log("✅ Document details retrieved");
-
-    // 5) Generate verification URL
-    const verifyUrl = `${window.location.origin}/verify?doc=${upload.data.id}&hash=${upload.data.hash}&block=${details.data.block}`;
-    console.log("🔗 Verification URL:", verifyUrl);
-
-    // 6) Embed blockchain info ke PDF original
-    const pdfDoc = await PDFDocument.load(await blob.arrayBuffer());
-
-    // Tambahkan blockchain stamp di halaman terakhir
-    const pages = pdfDoc.getPages();
-    const lastPage = pages[pages.length - 1];
-    const { width, height } = lastPage.getSize();
-
-    // Font untuk stamp
-    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-
-    // Background box untuk stamp
-    const stampWidth = 400;
-    const stampHeight = 120;
-    const stampX = width - stampWidth - 50;
-    const stampY = 50;
-
-    // Background rectangle
-    lastPage.drawRectangle({
-      x: stampX,
-      y: stampY,
-      width: stampWidth,
-      height: stampHeight,
-      color: rgb(0.95, 0.95, 0.95),
-      borderColor: rgb(0.2, 0.2, 0.2),
-      borderWidth: 1,
-    });
-
-    // Title
-    lastPage.drawText("🔗 BLOCKCHAIN VERIFICATION", {
-      x: stampX + 10,
-      y: stampY + stampHeight - 20,
-      size: 12,
-      font: fontBold,
-      color: rgb(0, 0, 0),
-    });
-
-    // Document ID
-    lastPage.drawText(`Document ID: ${upload.data.id}`, {
-      x: stampX + 10,
-      y: stampY + stampHeight - 40,
-      size: 10,
-      font: font,
-      color: rgb(0, 0, 0),
-    });
-
-    // Hash
-    lastPage.drawText(`Hash: ${upload.data.hash.substring(0, 20)}...`, {
-      x: stampX + 10,
-      y: stampY + stampHeight - 55,
-      size: 10,
-      font: font,
-      color: rgb(0, 0, 0),
-    });
-
-    // Block
-    lastPage.drawText(`Block: ${details.data.block}`, {
-      x: stampX + 10,
-      y: stampY + stampHeight - 70,
-      size: 10,
-      font: font,
-      color: rgb(0, 0, 0),
-    });
-
-    // Verification URL
-    lastPage.drawText(`Verify: ${verifyUrl}`, {
-      x: stampX + 10,
-      y: stampY + stampHeight - 85,
-      size: 8,
-      font: font,
-      color: rgb(0.5, 0.5, 0.5),
-    });
-
-    // Timestamp
-    const timestamp = new Date().toISOString();
-    lastPage.drawText(`Generated: ${timestamp}`, {
-      x: stampX + 10,
-      y: stampY + stampHeight - 100,
-      size: 8,
-      font: font,
-      color: rgb(0.5, 0.5, 0.5),
-    });
-
-    console.log("✅ Blockchain stamp embedded in PDF");
-
-    // 7) Save PDF dengan stamp
-    const pdfWithStamp = await pdfDoc.save();
-    const pdfWithStampBlob = new Blob([new Uint8Array(pdfWithStamp)], {
-      type: "application/pdf",
-    });
-
-    console.log("✅ PDF with blockchain stamp created");
-
-    // Log blockchain info untuk debugging
-    console.log(" Blockchain Info:", {
-      documentId: upload.data.id,
-      hash: upload.data.hash,
-      block: details.data.block,
-      verifyUrl: verifyUrl,
-    });
-
-    return pdfWithStampBlob;
+    return watermarkedPdfBlob;
   } catch (e) {
-    console.error("❌ Blockchain integration failed:", e);
-    console.log("📄 Falling back to regular PDF without blockchain");
-    // Fallback: return PDF tanpa blockchain
+    console.error("❌ PDF watermarking failed:", e);
+    console.log("📄 Falling back to original PDF");
     return blob;
   }
 }
@@ -159,61 +203,61 @@ export async function generateReport(data: any, fileName: string) {
   return blob;
 }
 
-// Function to generate PDF with blockchain and return exported version
-export async function generateReportWithBlockchain(
-  data: any,
-  fileName: string
-) {
-  const blob = await generatePDF(data);
+// // Function to generate PDF with blockchain and return exported version
+// export async function generateReportWithBlockchain(
+//   data: any,
+//   fileName: string
+// ) {
+//   const blob = await generatePDF(data);
 
-  try {
-    // Convert PDF to base64
-    const base64Content = await blobToBase64(blob);
+//   try {
+//     // Convert PDF to base64
+//     const base64Content = await blobToBase64(blob);
 
-    // Upload to ChainMarkX
-    const uploadResult = await cmxUploadDocument({
-      file_name: fileName,
-      content: base64Content,
-      owner: CHAINMARKX_USER_ID,
-      user: CHAINMARKX_USER_ID,
-    });
+//     // Upload to ChainMarkX
+//     const uploadResult = await cmxUploadDocument({
+//       file_name: fileName,
+//       content: base64Content,
+//       owner: CHAINMARKX_USER_ID,
+//       user: CHAINMARKX_USER_ID,
+//     });
 
-    // Encode watermark
-    await cmxEncodeDocument(uploadResult.data.id);
+//     // Encode watermark
+//     await cmxEncodeDocument(uploadResult.data.id);
 
-    // Get exported PDF with watermark
-    const exportedPdfBlob = await cmxExportPdf(uploadResult.data.id);
+//     // Get exported PDF with watermark
+//     const exportedPdfBlob = await cmxExportPdf(uploadResult.data.id);
 
-    // Get document details
-    const details = await cmxGetDocDetails(
-      CHAINMARKX_USER_ID,
-      uploadResult.data.id
-    );
+//     // Get document details
+//     const details = await cmxGetDocDetails(
+//       CHAINMARKX_USER_ID,
+//       uploadResult.data.id
+//     );
 
-    console.log("Blockchain details:", {
-      documentId: uploadResult.data.id,
-      hash: uploadResult.data.hash,
-      block: details.data.block,
-    });
+//     console.log("Blockchain details:", {
+//       documentId: uploadResult.data.id,
+//       hash: uploadResult.data.hash,
+//       block: details.data.block,
+//     });
 
-    // Download exported PDF with watermark
-    saveAs(exportedPdfBlob, `blockchain_${fileName}`);
+//     // Download exported PDF with watermark
+//     saveAs(exportedPdfBlob, `blockchain_${fileName}`);
 
-    return {
-      blob: exportedPdfBlob,
-      blockchainInfo: {
-        documentId: uploadResult.data.id,
-        hash: uploadResult.data.hash,
-        block: details.data.block,
-      },
-    };
-  } catch (error) {
-    console.error("Blockchain integration failed:", error);
-    // Fallback: download original PDF
-    saveAs(blob, fileName);
-    return { blob, blockchainInfo: null };
-  }
-}
+//     return {
+//       blob: exportedPdfBlob,
+//       blockchainInfo: {
+//         documentId: uploadResult.data.id,
+//         hash: uploadResult.data.hash,
+//         block: details.data.block,
+//       },
+//     };
+//   } catch (error) {
+//     console.error("Blockchain integration failed:", error);
+//     // Fallback: download original PDF
+//     saveAs(blob, fileName);
+//     return { blob, blockchainInfo: null };
+//   }
+// }
 
 // Main PDF generation function with multi-page layout (A4)
 async function generatePDF(data: any) {

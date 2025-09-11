@@ -3,11 +3,12 @@ import { Upload, Button, message, Card, Space, Table, Progress, Alert, Modal, Fo
 import { UploadOutlined, CloudUploadOutlined, FileExcelOutlined, FileTextOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
-import { API_URL } from "../../config";
+import { API_URL, CHAINMARKX_USER_ID } from "../../config";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import { generateReportBlob } from "../../utils/generateReport";
 import { buildHL7Message } from "../../utils/generateHl7";
+import { blobToBase64, cmxUploadDocument } from "../../utils/chainmarkx";
 
 interface PatientData {
   sampleReferenceNumber: string;
@@ -766,233 +767,385 @@ export const BatchUpload: React.FC = () => {
           }
         };
   // Process a single record
-  const processSingleRecord = async (patient: PatientData, labResults: LabTestResult[]) => {
+//   const processSingleRecord = async (patient: PatientData, labResults: LabTestResult[]) => {
+//   try {
+//     // Map lab results to the format expected by generateReportBlob
+//     const testResults = labResults.map(result => ({
+//       clinicalannotation: result.clinicalAnnotation || "",
+//       drug: result.drugName || "",
+//       gene: result.geneName ? result.geneName.split(",") : [],
+//       genotype: result.genoType ? result.genoType.split(",") : [],
+//       phenotype: result.phenoType ? result.phenoType.split(",") : [],
+//       toxicity: result.drugResponseToxicity ? result.drugResponseToxicity.split(",") : [],
+//       dosage: result.drugResponseDosage ? result.drugResponseDosage.split(",") : [],
+//       efficacy: result.drugResponseEfficacy ? result.drugResponseEfficacy.split(",") : [],
+//       evidence: result.evidence ? result.evidence.split(",") : [],
+//     }));
+//     const token = localStorage.getItem('authToken');
+//     if (!token) {
+//       throw new Error("Authentication token not found. Please login again.");
+//     }
+//     const pgxPanel = labResults[0]?.pgxPanel || [];
+    
+//     // Better patient name handling: combine first and last name properly
+//     let patientName = patient.patientName || '';
+//     if (!patientName && patient.patientLastName) {
+//       patientName = patient.patientLastName;
+//     }
+//     if (!patientName) {
+//       patientName = `Unknown (${patient.sampleReferenceNumber})`;
+//     }
+    
+//     // Pastikan sex tidak kosong - default ke 'Male'
+//     const sex = patient.sex || "Male";
+
+//     // Add additional genes from individual lab results if they have geneName/genoType/phenoType
+//     labResults.forEach(result => {
+//       if (result.geneName && result.genoType) {
+//         // Check if this gene is already in pgxPanel
+//         const exists = pgxPanel.some(p => p.gene === result.geneName);
+//         if (!exists) {
+//           pgxPanel.push({
+//             gene: result.geneName,
+//             genotype: result.genoType,
+//             phenotype: result.phenoType
+//           });
+//         }
+//       }
+//     });
+
+//      // Convert dates properly
+//     const dateOfBirth = convertExcelDate(patient.dateOfBirth || '');
+//     const sampleCollectionDate = convertExcelDate(patient.sampleCollectionDate || '');
+//     const sampleReceivedDate = convertExcelDate(patient.sampleReceivedDate || '');
+//     const currentDate = dayjs().format("YYYY-MM-DD");
+    
+//     // Remove duplicates
+//     const uniqueTestResults = testResults.filter((row, index, self) => {
+//       return (
+//         index === self.findIndex(
+//           (r) =>
+//             r.drug === row.drug &&
+//             JSON.stringify(r.gene) === JSON.stringify(row.gene) &&
+//             JSON.stringify(r.genotype) === JSON.stringify(row.genotype)
+//         )
+//       );
+//     });
+
+//       const reportData = {
+//       // Standard fields expected by PDF generator
+//       labAccessionNo: patient.sampleReferenceNumber || '',
+//       name: patientName,
+//       nric: patient.idNumber || '',
+//       dob: dateOfBirth || '',
+//       requestedBy: patient.physicianName || 'Unknown Physician',
+//       comments: patient.clinicalNotes || '',
+      
+//       location: patient.requester || 'TTSH',
+//       race: patient.ethnicity || '',
+//       sex: sex,
+//       age: patient.patientAgeGroup || '',
+//       dateReceived: sampleReceivedDate || dayjs().format("YYYY-MM-DD"),
+//       dateReport: dayjs().format("YYYY-MM-DD"),
+      
+//       // Additional fields from batch upload
+//       patientIdType: patient.patientIdType || '',
+//       patientContactNumber: patient.patientContactNumber || '',
+//       patientAddress: patient.patientAddress || '',
+//       patientPopulation: patient.patientPopulation || '',
+//       patientBodyWeight: patient.patientBodyWeight || '',
+//       sampleDescription: patient.sampleDescription || '',
+      
+//       // PGX panel data
+//       pgxPanel: pgxPanel,
+//     };
+
+//     // Generate PDF blob
+//     const pdfBlob = await generateReportBlob(reportData);
+
+//     if (!pdfBlob || !(pdfBlob instanceof Blob) || pdfBlob.size === 0) {
+//       throw new Error("generateReportBlob did not return a valid PDF Blob.");
+//     }
+
+//     // Generate HL7 message
+//     const hl7Message = buildHL7Message({
+//       patient_name: patientName,
+//       date_of_birth: patient.dateOfBirth || dayjs().format("YYYY-MM-DD"),
+//       sex: sex, // Gunakan nilai sex yang sudah dipastikan
+//       mrn: patient.mrn || `MRN-${patient.sampleReferenceNumber}`,
+//       id_number: patient.idNumber || "",
+//       patient_address: patient.patientAddress || "",
+//       patient_contact_number: patient.patientContactNumber || "",
+//       test_case_id: patient.sampleReferenceNumber,
+//       specimen_type: patient.specimenType || "Whole Blood",
+//       physician_name: patient.physicianName || "Unknown Physician",
+      
+//       // Pass PGX panel data to HL7 generator
+//       pgxPanel: pgxPanel,
+      
+//       // Keep testResults for backward compatibility but empty
+//       testResults: []
+//     });
+
+   
+
+//     // Create HL7 blob
+//     const hl7Blob = new Blob([hl7Message], { type: "text/plain" });
+
+//     // Create FormData object
+//     const formData = new FormData();
+//     formData.append("panel_template", batchData.selectedPanel);
+//     const sanitizedPatientName = patientName.replace(/\s+/g, "_");
+//     const pdfFileName = `${sanitizedPatientName}_Report.pdf`;
+
+//      // Convert watermarked PDF blob to File
+//       const watermarkedPdfBlob = await cmxUploadDocument({
+//       file_name: pdfFileName,
+//       content: await blobToBase64(pdfBlob),
+//       owner: CHAINMARKX_USER_ID,
+//       user: CHAINMARKX_USER_ID
+//     });
+    
+//      // PASTIKAN HASILNYA ADALAH BLOB
+//     if (!(watermarkedPdfBlob instanceof Blob)) {
+//         throw new Error("cmxUploadDocument did not return a valid Blob object.");
+//     }
+
+//     const watermarkedPdfFile = new File(
+//       [watermarkedPdfBlob],
+//       pdfFileName,
+//       { type: "application/pdf" }
+//     );
+
+    
+//      // SEKARANG (YANG BENAR):
+//     // Ubah Blob mentah menjadi objek File yang punya nama. Ini cara paling aman.
+//     const finalPdfFile = new File([pdfBlob], pdfFileName, { type: 'application/pdf' });
+    
+//     // formData.append("report_download_pdf", watermarkedPdfFile, `${sanitizedPatientName}_Report.pdf`);
+//     formData.append("report_download_pdf", finalPdfFile);
+//     formData.append("report_download_hl7", hl7Blob, `${sanitizedPatientName}_Report.hl7`);
+
+   
+  
+//     // Basic patient information
+//     formData.append("patient_name", patientName); // Keep for backward compatibility
+//     formData.append("patient_first_name", patient.patientFirstName || ""); // Add this
+//     formData.append("patient_last_name", patient.patientLastName || "");  
+//     formData.append("date_of_birth", dateOfBirth || currentDate);
+//     formData.append("sex", sex);
+//     formData.append("mrn", patient.mrn || `MRN-${patient.sampleReferenceNumber}`);
+//     formData.append("ethnicity", patient.ethnicity || "N/A");
+    
+//     // Additional patient details
+//     formData.append("patient_age_group", patient.patientAgeGroup || "");
+//     formData.append("patient_super_population", patient.patientSuperPopulation || "");
+//     formData.append("patient_population", patient.patientPopulation || "");
+//     formData.append("is_patient_hispanic", patient.isPatientHispanic ? "true" : "false");
+//     formData.append("patient_body_weight", patient.patientBodyWeight ? patient.patientBodyWeight.toString() : "");
+//     formData.append("treatment_history_carbamazepine", patient.treatmentHistoryCarbamazepine || "");
+//     formData.append("patient_id_type", patient.patientIdType || "");
+//     formData.append("id_number", patient.idNumber || "");
+//     formData.append("patient_contact_number", patient.patientContactNumber || "");
+//     formData.append("patient_address", patient.patientAddress || "");
+
+//     // Test and request information
+//     formData.append("test_request_reference_number", patient.testRequestReferenceNumber || "");
+//     formData.append("requester", patient.requester || "");
+//     formData.append("requester_address", patient.requesterAddress || "");
+//     formData.append("test_comment", patient.testComment || "");
+//     formData.append("panel_id", patient.panelId || "");
+//     formData.append("drug_group_id", patient.drugGroupId || "");
+//     formData.append("clinical_notes", patient.clinicalNotes || "");
+
+//     // Sample information
+//     formData.append("sample_reference_number", patient.sampleReferenceNumber2 || patient.sampleReferenceNumber || "");
+//     formData.append("sample_collection_date", sampleCollectionDate || "");
+//     formData.append("sample_received_date", sampleReceivedDate || "");
+//     formData.append("sample_description", patient.sampleDescription || "");
+//     formData.append("platform", patient.platform || "");
+//     formData.append("data_type", patient.dataType || "");
+//     formData.append("sample_file", patient.sampleFile || "");
+
+//     // Existing required fields
+//     formData.append("specimen_collected_from", "TTSH Hospital");
+//     formData.append("specimen_type", patient.specimenType || "Whole Blood");
+//     formData.append("specimen_id", `SP-${patient.sampleReferenceNumber}`);
+//     formData.append("specimen_received", dayjs().format("YYYY-MM-DD"));
+//     formData.append("test_information", "Pharmacogenomics Test");
+//     formData.append("lab_result_summary", "Batch uploaded lab test results");
+//     formData.append("physician_name", patient.physicianName || "Unknown Physician");
+//     formData.append("reviewer_name", "System Generated");
+//     formData.append("test_case_id", patient.sampleReferenceNumber);
+//     formData.append("disease", patient.disease || "Not specified");
+
+//    // Debug info - log what we're actually sending
+//     console.log("Sending patient data:", {
+//       // Log entire patient object for debugging
+//       patientName,
+//       dateOfBirth,
+//       sampleCollectionDate,
+//       sampleReceivedDate,
+//       sampleReferenceNumber: patient.sampleReferenceNumber,
+//       // Add these to see if they contain data
+//       testRequestReferenceNumber: patient.testRequestReferenceNumber,
+//       panelId: patient.panelId,
+//       drugGroupId: patient.drugGroupId,
+//       idNumber: patient.idNumber,
+//       requester: patient.requester,
+//       // Add more fields as needed
+//     });
+
+//     // Send to API
+//     const response = await fetch(`${API_URL}/lab-tests`, {
+//       method: "POST",
+//       body: formData,
+//       headers: {
+//         'Authorization': `Bearer ${token}`
+//       }
+//     });
+
+//     if (!response.ok) {
+//       // Tambahkan logging detail response untuk debug
+//       const errorText = await response.text();
+//       console.error(`Server responded with ${response.status}: ${errorText}`);
+//       throw new Error(`Failed to upload record for ${patientName}: ${response.statusText}`);
+//     }
+
+//     // Parse response untuk memastikan data disimpan dengan benar
+//     const responseData = await response.json();
+//     console.log("API Response:", responseData);
+
+//     return responseData; // Return data yang berhasil disimpan
+//   } catch (error) {
+//     console.error(`Error processing record for ${patient.patientName || 'unknown patient'}:`, error);
+//     throw error;
+//   }
+// };
+
+const processSingleRecord = async (patient: PatientData, labResults: LabTestResult[]) => {
   try {
-    // Map lab results to the format expected by generateReportBlob
-    const testResults = labResults.map(result => ({
-      clinicalannotation: result.clinicalAnnotation || "",
-      drug: result.drugName || "",
-      gene: result.geneName ? result.geneName.split(",") : [],
-      genotype: result.genoType ? result.genoType.split(",") : [],
-      phenotype: result.phenoType ? result.phenoType.split(",") : [],
-      toxicity: result.drugResponseToxicity ? result.drugResponseToxicity.split(",") : [],
-      dosage: result.drugResponseDosage ? result.drugResponseDosage.split(",") : [],
-      efficacy: result.drugResponseEfficacy ? result.drugResponseEfficacy.split(",") : [],
-      evidence: result.evidence ? result.evidence.split(",") : [],
-    }));
     const token = localStorage.getItem('authToken');
     if (!token) {
       throw new Error("Authentication token not found. Please login again.");
     }
+
+    // -- LANGKAH 1: SIAPKAN SEMUA DATA YANG DIPERLUKAN --
     const pgxPanel = labResults[0]?.pgxPanel || [];
-    
-    // Better patient name handling: combine first and last name properly
-    let patientName = patient.patientName || '';
-    if (!patientName && patient.patientLastName) {
-      patientName = patient.patientLastName;
-    }
-    if (!patientName) {
-      patientName = `Unknown (${patient.sampleReferenceNumber})`;
-    }
-    
-    // Pastikan sex tidak kosong - default ke 'Male'
+    let patientName = patient.patientName || `Unknown (${patient.sampleReferenceNumber})`;
     const sex = patient.sex || "Male";
-
-    // Add additional genes from individual lab results if they have geneName/genoType/phenoType
-    labResults.forEach(result => {
-      if (result.geneName && result.genoType) {
-        // Check if this gene is already in pgxPanel
-        const exists = pgxPanel.some(p => p.gene === result.geneName);
-        if (!exists) {
-          pgxPanel.push({
-            gene: result.geneName,
-            genotype: result.genoType,
-            phenotype: result.phenoType
-          });
-        }
-      }
-    });
-
-     // Convert dates properly
     const dateOfBirth = convertExcelDate(patient.dateOfBirth || '');
-    const sampleCollectionDate = convertExcelDate(patient.sampleCollectionDate || '');
     const sampleReceivedDate = convertExcelDate(patient.sampleReceivedDate || '');
+    const sampleCollectionDate = convertExcelDate(patient.sampleCollectionDate || '');
     const currentDate = dayjs().format("YYYY-MM-DD");
-    
-    // Remove duplicates
-    const uniqueTestResults = testResults.filter((row, index, self) => {
-      return (
-        index === self.findIndex(
-          (r) =>
-            r.drug === row.drug &&
-            JSON.stringify(r.gene) === JSON.stringify(row.gene) &&
-            JSON.stringify(r.genotype) === JSON.stringify(row.genotype)
-        )
-      );
-    });
 
-      const reportData = {
-      // Standard fields expected by PDF generator
-      labAccessionNo: patient.sampleReferenceNumber || '',
+    const reportData = {
+      labAccessionNo: patient.sampleReferenceNumber,
       name: patientName,
       nric: patient.idNumber || '',
-      dob: dateOfBirth || '',
+      dob: dateOfBirth,
       requestedBy: patient.physicianName || 'Unknown Physician',
       comments: patient.clinicalNotes || '',
-      
       location: patient.requester || 'TTSH',
       race: patient.ethnicity || '',
       sex: sex,
       age: patient.patientAgeGroup || '',
-      dateReceived: sampleReceivedDate || dayjs().format("YYYY-MM-DD"),
-      dateReport: dayjs().format("YYYY-MM-DD"),
-      
-      // Additional fields from batch upload
-      patientIdType: patient.patientIdType || '',
-      patientContactNumber: patient.patientContactNumber || '',
-      patientAddress: patient.patientAddress || '',
-      patientPopulation: patient.patientPopulation || '',
-      patientBodyWeight: patient.patientBodyWeight || '',
-      sampleDescription: patient.sampleDescription || '',
-      
-      // PGX panel data
+      dateReceived: sampleReceivedDate || currentDate,
+      dateReport: currentDate,
       pgxPanel: pgxPanel,
     };
 
-    // Generate PDF blob
-    const pdfBlob = await generateReportBlob(reportData);
+    // -- LANGKAH 2: BUAT PDF DAN KIRIM UNTUK DISTAMPEL --
+    // Fungsi ini akan mengembalikan Blob PDF yang SUDAH distempel (atau asli jika gagal).
+    const finalPdfBlob = await generateReportBlob(reportData);
 
-    // Generate HL7 message
-    const hl7Message = buildHL7Message({
-      patient_name: patientName,
-      date_of_birth: patient.dateOfBirth || dayjs().format("YYYY-MM-DD"),
-      sex: sex, // Gunakan nilai sex yang sudah dipastikan
-      mrn: patient.mrn || `MRN-${patient.sampleReferenceNumber}`,
-      id_number: patient.idNumber || "",
-      patient_address: patient.patientAddress || "",
-      patient_contact_number: patient.patientContactNumber || "",
-      test_case_id: patient.sampleReferenceNumber,
-      specimen_type: patient.specimenType || "Whole Blood",
-      physician_name: patient.physicianName || "Unknown Physician",
-      
-      // Pass PGX panel data to HL7 generator
-      pgxPanel: pgxPanel,
-      
-      // Keep testResults for backward compatibility but empty
-      testResults: []
+    // Validasi hasil dari proses stempel
+    if (!finalPdfBlob || !(finalPdfBlob instanceof Blob) || finalPdfBlob.size === 0) {
+      throw new Error("Stamping process resulted in an invalid or empty PDF Blob.");
+    }
 
-      // test_case_id: patient.sampleReferenceNumber,
-      // specimen_type: patient.specimenType || "Whole Blood",
-      // specimen_id: `SP-${patient.sampleReferenceNumber}`,
-      // specimen_collected_from: "TTSH Hospital",
-      // specimen_received: dayjs().format("YYYY-MM-DD"),
-      // test_information: "Pharmacogenomics Test",
-      // lab_result_summary: "Batch uploaded lab test results",
-      // testResults: uniqueTestResults,
-    });
-
-      
-
-    // Create HL7 blob
-    const hl7Blob = new Blob([hl7Message], { type: "text/plain" });
-
-    // Create FormData object
-    const formData = new FormData();
-    formData.append("panel_template", batchData.selectedPanel);
-    // Add files
+    // -- LANGKAH 3: SIAPKAN FormData UNTUK DIKIRIM KE API UTAMA (/lab-tests) --
+    const finalFormData = new FormData();
     const sanitizedPatientName = patientName.replace(/\s+/g, "_");
-    formData.append("report_download_pdf", pdfBlob, `${sanitizedPatientName}_Report.pdf`);
-    formData.append("report_download_hl7", hl7Blob, `${sanitizedPatientName}_Report.hl7`);
-  
+    const pdfFileName = `${sanitizedPatientName}_Report.pdf`;
+
+    // A. Masukkan PDF yang sudah distempel sebagai File
+    const finalPdfFile = new File([finalPdfBlob], pdfFileName, { type: 'application/pdf' });
+    finalFormData.append("report_download_pdf", finalPdfFile);
+
+    // B. Masukkan SEMUA data teks pasien lainnya ke FormData yang sama
     // Basic patient information
-    formData.append("patient_name", patientName); // Keep for backward compatibility
-    formData.append("patient_first_name", patient.patientFirstName || ""); // Add this
-    formData.append("patient_last_name", patient.patientLastName || "");  
-    formData.append("date_of_birth", dateOfBirth || currentDate);
-    formData.append("sex", sex);
-    formData.append("mrn", patient.mrn || `MRN-${patient.sampleReferenceNumber}`);
-    formData.append("ethnicity", patient.ethnicity || "N/A");
+    finalFormData.append("patient_name", patientName);
+    finalFormData.append("patient_first_name", patient.patientFirstName || "");
+    finalFormData.append("patient_last_name", patient.patientLastName || "");  
+    finalFormData.append("date_of_birth", dateOfBirth || currentDate);
+    finalFormData.append("sex", sex);
+    finalFormData.append("mrn", patient.mrn || `MRN-${patient.sampleReferenceNumber}`);
+    finalFormData.append("ethnicity", patient.ethnicity || "N/A");
     
     // Additional patient details
-    formData.append("patient_age_group", patient.patientAgeGroup || "");
-    formData.append("patient_super_population", patient.patientSuperPopulation || "");
-    formData.append("patient_population", patient.patientPopulation || "");
-    formData.append("is_patient_hispanic", patient.isPatientHispanic ? "true" : "false");
-    formData.append("patient_body_weight", patient.patientBodyWeight ? patient.patientBodyWeight.toString() : "");
-    formData.append("treatment_history_carbamazepine", patient.treatmentHistoryCarbamazepine || "");
-    formData.append("patient_id_type", patient.patientIdType || "");
-    formData.append("id_number", patient.idNumber || "");
-    formData.append("patient_contact_number", patient.patientContactNumber || "");
-    formData.append("patient_address", patient.patientAddress || "");
+    finalFormData.append("patient_age_group", patient.patientAgeGroup || "");
+    finalFormData.append("patient_super_population", patient.patientSuperPopulation || "");
+    finalFormData.append("patient_population", patient.patientPopulation || "");
+    finalFormData.append("is_patient_hispanic", patient.isPatientHispanic ? "true" : "false");
+    finalFormData.append("patient_body_weight", patient.patientBodyWeight ? patient.patientBodyWeight.toString() : "");
+    finalFormData.append("treatment_history_carbamazepine", patient.treatmentHistoryCarbamazepine || "");
+    finalFormData.append("patient_id_type", patient.patientIdType || "");
+    finalFormData.append("id_number", patient.idNumber || "");
+    finalFormData.append("patient_contact_number", patient.patientContactNumber || "");
+    finalFormData.append("patient_address", patient.patientAddress || "");
 
     // Test and request information
-    formData.append("test_request_reference_number", patient.testRequestReferenceNumber || "");
-    formData.append("requester", patient.requester || "");
-    formData.append("requester_address", patient.requesterAddress || "");
-    formData.append("test_comment", patient.testComment || "");
-    formData.append("panel_id", patient.panelId || "");
-    formData.append("drug_group_id", patient.drugGroupId || "");
-    formData.append("clinical_notes", patient.clinicalNotes || "");
+    finalFormData.append("test_request_reference_number", patient.testRequestReferenceNumber || "");
+    finalFormData.append("requester", patient.requester || "");
+    finalFormData.append("requester_address", patient.requesterAddress || "");
+    finalFormData.append("test_comment", patient.testComment || "");
+    finalFormData.append("panel_id", patient.panelId || "");
+    finalFormData.append("drug_group_id", patient.drugGroupId || "");
+    finalFormData.append("clinical_notes", patient.clinicalNotes || "");
 
     // Sample information
-    formData.append("sample_reference_number", patient.sampleReferenceNumber2 || patient.sampleReferenceNumber || "");
-    formData.append("sample_collection_date", sampleCollectionDate || "");
-    formData.append("sample_received_date", sampleReceivedDate || "");
-    formData.append("sample_description", patient.sampleDescription || "");
-    formData.append("platform", patient.platform || "");
-    formData.append("data_type", patient.dataType || "");
-    formData.append("sample_file", patient.sampleFile || "");
+    finalFormData.append("sample_reference_number", patient.sampleReferenceNumber2 || patient.sampleReferenceNumber || "");
+    finalFormData.append("sample_collection_date", sampleCollectionDate || "");
+    finalFormData.append("sample_received_date", sampleReceivedDate || "");
+    finalFormData.append("sample_description", patient.sampleDescription || "");
+    finalFormData.append("platform", patient.platform || "");
+    finalFormData.append("data_type", patient.dataType || "");
+    finalFormData.append("sample_file", patient.sampleFile || "");
 
-    // Existing required fields
-    formData.append("specimen_collected_from", "TTSH Hospital");
-    formData.append("specimen_type", patient.specimenType || "Whole Blood");
-    formData.append("specimen_id", `SP-${patient.sampleReferenceNumber}`);
-    formData.append("specimen_received", dayjs().format("YYYY-MM-DD"));
-    formData.append("test_information", "Pharmacogenomics Test");
-    formData.append("lab_result_summary", "Batch uploaded lab test results");
-    formData.append("physician_name", patient.physicianName || "Unknown Physician");
-    formData.append("reviewer_name", "System Generated");
-    formData.append("test_case_id", patient.sampleReferenceNumber);
-    formData.append("disease", patient.disease || "Not specified");
-
-   // Debug info - log what we're actually sending
-    console.log("Sending patient data:", {
-      // Log entire patient object for debugging
-      patientName,
-      dateOfBirth,
-      sampleCollectionDate,
-      sampleReceivedDate,
-      sampleReferenceNumber: patient.sampleReferenceNumber,
-      // Add these to see if they contain data
-      testRequestReferenceNumber: patient.testRequestReferenceNumber,
-      panelId: patient.panelId,
-      drugGroupId: patient.drugGroupId,
-      idNumber: patient.idNumber,
-      requester: patient.requester,
-      // Add more fields as needed
-    });
-
-    // Send to API
+    // Existing required fields that might be expected by the backend
+    finalFormData.append("specimen_collected_from", patient.requester || "TTSH Hospital");
+    finalFormData.append("specimen_type", patient.specimenType || "Whole Blood");
+    finalFormData.append("specimen_id", `SP-${patient.sampleReferenceNumber}`);
+    finalFormData.append("specimen_received", sampleReceivedDate || currentDate);
+    finalFormData.append("test_information", "Pharmacogenomics Test");
+    finalFormData.append("lab_result_summary", "Batch uploaded lab test results");
+    finalFormData.append("physician_name", patient.physicianName || "Unknown Physician");
+    finalFormData.append("reviewer_name", "System Generated");
+    finalFormData.append("test_case_id", patient.sampleReferenceNumber);
+    finalFormData.append("disease", patient.disease || "Not specified");
+    finalFormData.append("panel_template", batchData.selectedPanel);
+    
+    // -- LANGKAH 4: KIRIM FormData LENGKAP KE API /lab-tests --
     const response = await fetch(`${API_URL}/lab-tests`, {
       method: "POST",
-      body: formData,
+      body: finalFormData, // Kirim FormData yang sudah lengkap
       headers: {
         'Authorization': `Bearer ${token}`
+        // JANGAN set 'Content-Type', biarkan browser yang mengaturnya
       }
     });
 
     if (!response.ok) {
-      // Tambahkan logging detail response untuk debug
       const errorText = await response.text();
-      console.error(`Server responded with ${response.status}: ${errorText}`);
+      console.error(`Server responded with 400 on /lab-tests: ${errorText}`);
       throw new Error(`Failed to upload record for ${patientName}: ${response.statusText}`);
     }
 
-    // Parse response untuk memastikan data disimpan dengan benar
     const responseData = await response.json();
-    console.log("API Response:", responseData);
+    console.log("API Response from /lab-tests:", responseData);
+    return responseData;
 
-    return responseData; // Return data yang berhasil disimpan
   } catch (error) {
     console.error(`Error processing record for ${patient.patientName || 'unknown patient'}:`, error);
     throw error;
