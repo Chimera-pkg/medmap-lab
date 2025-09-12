@@ -3,7 +3,6 @@ import { Form, Input, Select, DatePicker, Upload, Button, Row, Col, notification
 import MDEditor from "@uiw/react-md-editor";
 import { UploadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
-// import { generateReportBlob } from "../../utils/generateReport";
 import { generateReport } from "../../utils/generateReport";
 import { API_URL } from "../../config";
 import { useNavigate } from "react-router-dom";
@@ -103,12 +102,12 @@ const uniqueTestResults = testResults.filter((row, index, self) => {
         };
 
         try {
-            // Generate PDF blob berdasarkan reportData
-            const pdfBlob = await generateReportBlob(reportData);
-            console.log("Generated PDF Blob:", pdfBlob);
+            // // Generate PDF blob berdasarkan reportData
+            // const pdfBlob = await generateReport(reportData, pdfFileName);
+            // console.log("Generated PDF Blob:", pdfBlob);
 
-             // Generate HL7 message using the buildHL7Message function
-            // Panggil fungsi buildHL7Message dengan data lengkap
+            //  // Generate HL7 message using the buildHL7Message function
+            // // Panggil fungsi buildHL7Message dengan data lengkap
         const hl7Message = buildHL7Message({
             patient_name: values.patient_name,
             date_of_birth: date_of_birth ? dayjs(date_of_birth).format("YYYY-MM-DD") : null,
@@ -136,7 +135,7 @@ const uniqueTestResults = testResults.filter((row, index, self) => {
 
             // Create FormData object and append files and individual fields
             const formData = new FormData();
-            formData.append("report_download_pdf", pdfBlob, pdfFileName);
+            // formData.append("report_download_pdf", pdfBlob, pdfFileName);
             formData.append("report_download_hl7", hl7Blob, hl7FileName);
 
 
