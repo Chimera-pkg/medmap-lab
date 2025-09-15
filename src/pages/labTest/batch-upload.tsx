@@ -246,64 +246,80 @@ export const BatchUpload: React.FC = () => {
       } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
         // Parse Excel
         const arrayBuffer = await file.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true, cellText:false });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        const sheetData = XLSX.utils.sheet_to_json(worksheet, {
+          header: 1, 
+          blankrows: false, 
+          defval: '', 
+          dateNF:'YYYY-MM-DD', 
+          raw: false
+        }) as any[][];
         
-        console.log("Raw Excel data:", jsonData);
-        
-        patientData = jsonData.map((row: any) => {
-           // Extract first and last name separately for backend
-        const firstName = row['Patient First Name'] || row['patient_first_name'] || row['PatientFirstName'] || '';
-        const lastName = row['Patient Last Name'] || row['patient_last_name'] || row['PatientLastName'] || '';
+        console.log("Raw Excel data:", sheetData);
+
+        const headers = sheetData[0] as string[];
+        const stableKeys = sheetData[1] as string[];
+        const dataRows = sheetData.slice(2);
+
+        patientData = dataRows.map((row: any) => {
+        const rowByHeader:Record<string, any> = {};
+        const rowByKey:Record<string, any> = {}
+
+        // Create lookup objects for the current row
+        headers.forEach((header, i) => (rowByHeader[header.trim()] = row[i]));
+        stableKeys.forEach((key, i) => (rowByKey[key.trim()] = row[i]));
+
+        // Extract first and last name separately for backend
+        const firstName = rowByKey['patient.firstName'] || rowByHeader['Patient First Name'];
+        const lastName = rowByKey['patient.lastName'] || rowByHeader['Patient Last Name'];
         
         // Create display name for frontend use (fallback to individual names if combined name not available)
-        const patientName = row['Patient Name'] || row['patient_name'] || row['PatientName'] || `${firstName} ${lastName}`.trim() || lastName || firstName;
+        const patientName = rowByKey['Patient Name'] || rowByHeader['patient.name'] || `${firstName} ${lastName}`.trim();
 
         return {
           // Basic required fields
-          sampleReferenceNumber: row['Sample Reference Number'] || row['sample_ref_no'] || row['SampleReferenceNumber'] || '',
-          patientName: row['Patient Name'] || row['patient_name'] || row['PatientName'] || '',
-          patientLastName: row['Patient Last Name'] || row['patient_last_name'] || row['PatientLastName'] || '',
-          dateOfBirth: row['Date of Birth'] || row['dob'] || row['DateOfBirth'] || '',
-          sex: row['Sex'] || row['gender'] || '',
-          mrn: row['MRN'] || row['mrn'] || '',
-          ethnicity: row['Ethnicity'] || row['ethnicity'] || '',
-          specimenType: row['Specimen Type'] || row['specimen_type'] || row['SpecimenType'] || '',
-          physicianName: row['Physician Name'] || row['physician'] || row['PhysicianName'] || '',
-          disease: row['Disease'] || row['disease'] || '',
+          sampleReferenceNumber: rowByKey['sample.sampleReferenceNumber'] || rowByHeader['Sample Reference Number'],
+          patientName: patientName,
+          patientLastName: lastName,
+          dateOfBirth:  rowByKey['patient.birthday'] || rowByHeader['Patient Birthday'],
+          sex: rowByKey['patient.gender'] || rowByHeader['Patient Gender'],
+          mrn: rowByKey['patient.mrn'] || rowByHeader['Patient Medical Record Number(MRN)'],
+          ethnicity: rowByKey['patient.populationDetail'] || rowByHeader['Patient Population'],
+          specimenType: rowByKey['sample.sampleSource'] || rowByHeader['Sample Source'],
+          physicianName: rowByKey['test.physicianName'] || rowByHeader['Physician Name'],
+          disease: rowByKey['disease'] || rowByHeader['Disease'],
           
           // Additional patient demographics
-          patientAgeGroup: row['Patient Age Group'] || row['patient_age_group'] || row['AgeGroup'] || '',
-          patientSuperPopulation: row['Patient Super Population'] || row['patient_super_population'] || row['SuperPopulation'] || '',
-          patientPopulation: row['Patient Population'] || row['patient_population'] || row['Population'] || '',
-          isPatientHispanic: row['Is Patient Hispanic'] || row['is_patient_hispanic'] || row['Hispanic'] === 'true' || row['Hispanic'] === 'Yes',
-          patientBodyWeight: parseFloat(row['Patient Body Weight'] || row['patient_body_weight'] || row['BodyWeight'] || '0') || undefined,
-          treatmentHistoryCarbamazepine: row['Treatment History Carbamazepine'] || row['treatment_history_carbamazepine'] || row['TreatmentHistory'] || '',
-          patientIdType: row['Patient ID Type'] || row['patient_id_type'] || row['IDType'] || '',
-          idNumber: row['ID Number'] || row['id_number'] || row['IDNumber'] || '',
-          patientContactNumber: row['Patient Contact Number'] || row['patient_contact_number'] || row['ContactNumber'] || '',
-          patientAddress: row['Patient Address'] || row['patient_address'] || row['Address'] || '',
+          patientAgeGroup: rowByKey['patient.ageGroup'] || rowByHeader['Patient Age Group'],
+          patientSuperPopulation: rowByKey['patient.population'] || rowByHeader['Patient Super Population'],
+          patientPopulation: rowByKey['patient.populationDetail'] || rowByHeader['Patient Population'],
+          isPatientHispanic: (rowByKey['patient.hispanic'] || rowByHeader['Is Patient Hispanic']) === 'Hispanic',
+          patientBodyWeight: parseFloat(rowByKey['patient.bodyWeight'] || rowByHeader['Patient Body Weight'] || '0') || undefined,
+          treatmentHistoryCarbamazepine: rowByKey['patient.treatmentHistory'] || rowByHeader['Treatment History of carbamazepine of Patient'],
+          patientIdType: rowByKey['patient.idType'] || rowByHeader['ID type'],
+          idNumber: rowByKey['patient.idNumber'] || rowByHeader['ID Number'],
+          patientContactNumber: rowByKey['patient.mobileNumber'] || rowByHeader['Patient Contact Number'],
+          patientAddress: rowByKey['patient.address'] || rowByHeader['Patient Address'],
           
           // Test and request information
-          testRequestReferenceNumber: row['Test Request Reference Number'] || row['test_request_reference_number'] || row['RequestRefNumber'] || '',
-          requester: row['Requester'] || row['requester'] || '',
-          requesterAddress: row['Requester Address'] || row['requester_address'] || row['RequesterAddress'] || '',
-          testComment: row['Test Comment'] || row['test_comment'] || row['TestComment'] || '',
-          panelId: row['Panel ID'] || row['panel_id'] || row['PanelID'] || '',
-          drugGroupId: row['Drug Group ID'] || row['drug_group_id'] || row['DrugGroupID'] || '',
-          clinicalNotes: row['Clinical Notes'] || row['clinical_notes'] || row['ClinicalNotes'] || '',
+          testRequestReferenceNumber: rowByKey['test.referenceNumber'] || rowByHeader['Test Request Reference Number'],
+          requester: rowByKey['test.sampleFromInstitution'] || rowByHeader['Requester'],
+          requesterAddress: rowByKey['test.requesterAddress'] || rowByHeader['Requester Address'],
+          testComment: rowByKey['test.remarks'] || rowByHeader['Test Comment'],
+          panelId: rowByKey['config.panelId'] || rowByHeader['Panel ID'],
+          drugGroupId: rowByKey['config.drugGroupId'] || rowByHeader['Drug Group ID'],
+          clinicalNotes: rowByKey['config.clinicalNotes'] || rowByHeader['Clinical Notes'],
           
           // Sample information
-          sampleReferenceNumber2: row['Sample Reference Number 2'] || row['sample_reference_number'] || row['SampleRefNumber'] || '',
-          sampleCollectionDate: row['Sample Collection Date'] || row['sample_collection_date'] || row['CollectionDate'] || '',
-          sampleReceivedDate: row['Sample Received Date'] || row['sample_received_date'] || row['ReceivedDate'] || '',
-          sampleDescription: row['Sample Description'] || row['sample_description'] || row['SampleDescription'] || '',
-          platform: row['Platform'] || row['platform'] || '',
-          dataType: row['Data Type'] || row['data_type'] || row['DataType'] || '',
-          sampleFile: row['Sample File'] || row['sample_file'] || row['SampleFile'] || ''
-        };
+          sampleCollectionDate: rowByKey['sample.collectionDate'] || rowByHeader['Sample Collection Date'],
+          sampleReceivedDate: rowByKey['sample.receivedDate'] || rowByHeader['Sample Received Date'],
+          sampleDescription: rowByKey['sample.description'] || rowByHeader['Sample Description (Free Text)'],
+          platform: rowByKey['sample.platform'] || rowByHeader['Platform'],
+          dataType: rowByKey['sample.dataType'] || rowByHeader['Data type'],
+          sampleFile: rowByKey['sample.fileNameR1'] || rowByHeader['Sample  File'], // Note: Handles double space in 'Sample  File'
+        } as PatientData;
       }).filter((item: any) => item.sampleReferenceNumber && item.sampleReferenceNumber !== 'sample.sampleReferenceNumber');
     }
 
