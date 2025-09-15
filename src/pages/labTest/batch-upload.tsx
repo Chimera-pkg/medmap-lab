@@ -246,7 +246,7 @@ export const BatchUpload: React.FC = () => {
       } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
         // Parse Excel
         const arrayBuffer = await file.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
@@ -261,16 +261,19 @@ export const BatchUpload: React.FC = () => {
         // Create display name for frontend use (fallback to individual names if combined name not available)
         const patientName = row['Patient Name'] || row['patient_name'] || row['PatientName'] || `${firstName} ${lastName}`.trim() || lastName || firstName;
 
+        // Function to convert Excel date to YYYY-MM-DD
+        const toDateString = (date: any) => (date instanceof Date ? date.toISOString().slice(0,10) : '');
+
         return {
           // Basic required fields
-          sampleReferenceNumber: row['Sample Reference Number'] || row['sample_ref_no'] || row['SampleReferenceNumber'] || '',
-          patientName: row['Patient Name'] || row['patient_name'] || row['PatientName'] || '',
-          patientLastName: row['Patient Last Name'] || row['patient_last_name'] || row['PatientLastName'] || '',
-          dateOfBirth: row['Date of Birth'] || row['dob'] || row['DateOfBirth'] || '',
-          sex: row['Sex'] || row['gender'] || '',
-          mrn: row['MRN'] || row['mrn'] || '',
-          ethnicity: row['Ethnicity'] || row['ethnicity'] || '',
-          specimenType: row['Specimen Type'] || row['specimen_type'] || row['SpecimenType'] || '',
+          sampleReferenceNumber: (row['Sample Reference Number'] || row['sample_ref_no'] || row['SampleReferenceNumber'] || '').toString(),
+          patientName: patientName,
+          patientLastName: lastName,
+          dateOfBirth:  toDateString(row['Patient Birthday'] || row['dob'] || row['DateOfBirth']),
+          sex: row['Patient Gender'] || row['gender'] || '',
+          mrn: row['Patient Medical Record Number(MRN)'] || row['mrn'] || '',
+          ethnicity: row['Patient Population'] || row['ethnicity'] || '',
+          specimenType: row['Sample Source'] || '',
           physicianName: row['Physician Name'] || row['physician'] || row['PhysicianName'] || '',
           disease: row['Disease'] || row['disease'] || '',
           
@@ -278,12 +281,12 @@ export const BatchUpload: React.FC = () => {
           patientAgeGroup: row['Patient Age Group'] || row['patient_age_group'] || row['AgeGroup'] || '',
           patientSuperPopulation: row['Patient Super Population'] || row['patient_super_population'] || row['SuperPopulation'] || '',
           patientPopulation: row['Patient Population'] || row['patient_population'] || row['Population'] || '',
-          isPatientHispanic: row['Is Patient Hispanic'] || row['is_patient_hispanic'] || row['Hispanic'] === 'true' || row['Hispanic'] === 'Yes',
+          isPatientHispanic: (row['Is Patient Hispanic'] || row['is_patient_hispanic']) === 'Hispanic',
           patientBodyWeight: parseFloat(row['Patient Body Weight'] || row['patient_body_weight'] || row['BodyWeight'] || '0') || undefined,
-          treatmentHistoryCarbamazepine: row['Treatment History Carbamazepine'] || row['treatment_history_carbamazepine'] || row['TreatmentHistory'] || '',
-          patientIdType: row['Patient ID Type'] || row['patient_id_type'] || row['IDType'] || '',
+          treatmentHistoryCarbamazepine: row['Treatment History of carbamazepine of Patient'] || row['treatment_history_carbamazepine'] || row['TreatmentHistory'] || '',
+          patientIdType: row['ID type'] || row['patient_id_type'] || row['IDType'] || '',
           idNumber: row['ID Number'] || row['id_number'] || row['IDNumber'] || '',
-          patientContactNumber: row['Patient Contact Number'] || row['patient_contact_number'] || row['ContactNumber'] || '',
+          patientContactNumber: (row['Patient Contact Number'] || row['patient_contact_number'] || row['ContactNumber'] || '').toString(),
           patientAddress: row['Patient Address'] || row['patient_address'] || row['Address'] || '',
           
           // Test and request information
@@ -296,14 +299,14 @@ export const BatchUpload: React.FC = () => {
           clinicalNotes: row['Clinical Notes'] || row['clinical_notes'] || row['ClinicalNotes'] || '',
           
           // Sample information
-          sampleReferenceNumber2: row['Sample Reference Number 2'] || row['sample_reference_number'] || row['SampleRefNumber'] || '',
-          sampleCollectionDate: row['Sample Collection Date'] || row['sample_collection_date'] || row['CollectionDate'] || '',
-          sampleReceivedDate: row['Sample Received Date'] || row['sample_received_date'] || row['ReceivedDate'] || '',
-          sampleDescription: row['Sample Description'] || row['sample_description'] || row['SampleDescription'] || '',
+          sampleReferenceNumber2: (row['Sample Reference Number 2'] || row['sample_reference_number'] || row['SampleRefNumber'] || '').toString(),
+          sampleCollectionDate: toDateString(row['Sample Collection Date'] || row['sample_collection_date'] || row['CollectionDate']),
+          sampleReceivedDate: toDateString(row['Sample Received Date'] || row['sample_received_date'] || row['ReceivedDate']),
+          sampleDescription: row['Sample Description (Free Text)'] || row['sample_description'] || row['SampleDescription'] || '',
           platform: row['Platform'] || row['platform'] || '',
-          dataType: row['Data Type'] || row['data_type'] || row['DataType'] || '',
-          sampleFile: row['Sample File'] || row['sample_file'] || row['SampleFile'] || ''
-        };
+          dataType: row['Data type'] || row['data_type'] || row['DataType'] || '',
+          sampleFile: row['Sample  File'] || row['sample_file'] || row['SampleFile'] || ''
+        } as PatientData;
       }).filter((item: any) => item.sampleReferenceNumber && item.sampleReferenceNumber !== 'sample.sampleReferenceNumber');
     }
 
