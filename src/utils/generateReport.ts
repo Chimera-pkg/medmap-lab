@@ -407,7 +407,7 @@ async function generatePDF(data: any) {
       { label: "DOB", value: data.dob || "-" },
       {
         label: "Requested By",
-        value: data.requester || "-",
+        value: data.requestedBy || "-",
       },
       { label: "Comments", value: data.comments || data.clinicalNotes || "-" },
     ];
