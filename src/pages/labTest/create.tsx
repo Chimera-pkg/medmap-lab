@@ -104,8 +104,8 @@ const uniqueTestResults = testResults.filter((row, index, self) => {
 
         try {
             // Generate PDF blob berdasarkan reportData
-            const pdfBlob = await generateReportBlob(reportData);
-            console.log("Generated PDF Blob:", pdfBlob);
+            // const pdfBlob = await generateReport(reportData);
+            // console.log("Generated PDF Blob:", pdfBlob);
 
              // Generate HL7 message using the buildHL7Message function
             // Panggil fungsi buildHL7Message dengan data lengkap
@@ -136,7 +136,7 @@ const uniqueTestResults = testResults.filter((row, index, self) => {
 
             // Create FormData object and append files and individual fields
             const formData = new FormData();
-            formData.append("report_download_pdf", pdfBlob, pdfFileName);
+            // formData.append("report_download_pdf", pdfBlob, pdfFileName);
             formData.append("report_download_hl7", hl7Blob, hl7FileName);
 
 
