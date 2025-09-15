@@ -853,7 +853,7 @@ export const BatchUpload: React.FC = () => {
       name: patientName,
       nric: patient.idNumber || '',
       dob: dateOfBirth || '',
-      requestedBy: patient.physicianName || 'Unknown Physician',
+      requestedBy: patient.physicianName || patient.requester || 'Unknown Physician',
       comments: patient.clinicalNotes || '',
       
       location: patient.requester || 'TTSH',
