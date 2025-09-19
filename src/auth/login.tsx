@@ -31,7 +31,7 @@ const Login: React.FC = () => {
       
       if (!response.ok) throw new Error("Login failed");
       
-      const { token, user } = await response.json();
+      const { token: {token }, user } = await response.json();
       localStorage.setItem("authToken", token);
       localStorage.setItem("userName", user.username);
       
