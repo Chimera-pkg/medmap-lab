@@ -8,6 +8,7 @@ import {
   blobToBase64,
   CHAINMARKX_USER_ID,
 } from "./chainmarkx";
+import { CHAINMARKX_BASE_URL } from "../config";
 
 // Function to generate PDF blob without downloading - WITH BLOCKCHAIN INTEGRATION
 // export async function generateReportBlob(data: any) {
@@ -166,7 +167,7 @@ export async function generateReportBlob(data: any) {
 
     // 2) Send to watermarking endpoint
     const response = await fetch(
-      "/chainmarkx/user/admin@mail.com/profile/export",
+      `${CHAINMARKX_BASE_URL}/user/admin@mail.com/profile/export`,
       {
         method: "POST",
         headers: {
