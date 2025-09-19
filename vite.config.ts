@@ -7,12 +7,12 @@ export default defineConfig({
   server: {
     proxy: {
       "/v1": {
-        target: "http://122.11.173.11:10868",
+        target: "http://122.11.173.11:23335",
         changeOrigin: true,
         secure: false,
       },
       "/auth": {
-        target: "http://122.11.173.11:10888",
+        target: "http://122.11.173.11:20080",
         changeOrigin: true,
         secure: false,
       },
