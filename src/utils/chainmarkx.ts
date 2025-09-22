@@ -93,7 +93,7 @@ export async function cmxUploadDocument(params: {
 }) {
   try {
     const response = await fetch(
-      `/chainmarkx/user/admin@mail.com/profile/export`,
+      `${CHAINMARKX_BASE_URL}/user/admin@mail.com/profile/export`,
       {
         method: "POST",
         headers: {
