@@ -79,7 +79,7 @@ const App: React.FC = () => {
       localStorage.removeItem("authToken");
       return {
         success: true,
-        redirectTo: "/auth/login",
+        redirectTo: "/login",
       };
     },
     check: async () => {
@@ -96,7 +96,7 @@ const App: React.FC = () => {
           name: "Not authenticated",
         },
         logout: true,
-        redirectTo: "/auth/login",
+        redirectTo: "/login",
       };
     },
     getIdentity: async () => {
