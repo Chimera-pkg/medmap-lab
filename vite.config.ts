@@ -5,6 +5,8 @@ import tailwindcss from "tailwindcss";
 export default defineConfig({
   plugins: [react()],
   server: {
+    host: true,
+    allowedHosts: true,
     proxy: {
       "/v1": {
         target: "http://122.11.173.11:10868",
