@@ -8,16 +8,17 @@ export default defineConfig({
     host: true,
     allowedHosts: true,
     proxy: {
-      "/v1": {
-        target: "http://122.11.173.11:10868",
+      "/api": {
+        target: "http://127.0.0.1:3335",
         changeOrigin: true,
         secure: false,
+        rewrite: path => path.replace(/^\/api/, '')
       },
-      "/auth": {
-        target: "http://122.11.173.11:10888",
-        changeOrigin: true,
-        secure: false,
-      },
+      // "/auth": {
+      //   target: "http://122.11.173.11:10888",
+      //   changeOrigin: true,
+      //   secure: false,
+      // },
       "/chainmarkx": {
         target: "https://backend.chainmarkx.cognidex.ai",
         changeOrigin: true,
