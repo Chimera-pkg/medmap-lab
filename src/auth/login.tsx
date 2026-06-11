@@ -3,14 +3,12 @@ import { UserOutlined, LockOutlined, EyeTwoTone, EyeInvisibleOutlined } from "@a
 import { API_URL } from "../config";
 import { Alert, Button, Checkbox, Form, Input } from "antd";
 import { Link } from "react-router-dom";
-import { cmxLogin } from "../utils/chainmarkx"; // Tambahkan import
 
 const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [form] = Form.useForm();
   const [rememberMe, setRememberMe] = useState(false);
-  
 
   // Updated handleLogin to accept form values directly
   const handleLogin = async (values: { email: string; password: string }) => {
@@ -18,38 +16,33 @@ const Login: React.FC = () => {
     setError("");
     try {
       console.log("Attempting login with:", values.email);
-      
+
       // Login ke app utama
       const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          email: values.email, 
-          password: values.password 
+        body: JSON.stringify({
+          email: values.email,
+          password: values.password,
         }),
       });
-      
+
       if (!response.ok) throw new Error("Login failed");
-      
-      const { token: {token }, user } = await response.json();
+
+      const {
+        token: { token },
+        user,
+      } = await response.json();
       localStorage.setItem("authToken", token);
       localStorage.setItem("userName", user.username);
-      
-      // Login ke ChainMarkX (opsional, bisa skip jika gagal)
-      try {
-        await cmxLogin(values.email, values.password);
-        console.log("ChainMarkX login successful");
-      } catch (cmxError) {
-        console.warn("ChainMarkX login failed, continuing without blockchain:", cmxError);
-      }
-      
+
       // Save email if remember me is checked
       if (rememberMe) {
         localStorage.setItem("rememberedEmail", values.email);
       } else {
         localStorage.removeItem("rememberedEmail");
       }
-      
+
       window.location.href = "/";
     } catch (err) {
       console.error("Login error:", err);
@@ -72,13 +65,9 @@ const Login: React.FC = () => {
     <div className="min-h-screen flex">
       {/* Left: Image */}
       <div className="lg:block w-1/2">
-        <img
-          src="/hospital_image.png"
-          alt="Hospital"
-          className="w-full h-full object-cover"
-        />
+        <img src="/hospital_image.png" alt="Hospital" className="w-full h-full object-cover" />
       </div>
-      
+
       {/* Right: Login Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md space-y-6" style={{ maxWidth: "500px" }}>
@@ -88,7 +77,7 @@ const Login: React.FC = () => {
               If you are already a member you can login with your email address and password.
             </p>
           </div>
-          
+
           {error && (
             <Alert
               message="Login Error"
@@ -99,7 +88,7 @@ const Login: React.FC = () => {
               onClose={() => setError("")}
             />
           )}
-          
+
           <Form
             form={form}
             name="login"
@@ -113,17 +102,17 @@ const Login: React.FC = () => {
               label="Email address"
               rules={[
                 { required: true, message: "Please input your email!" },
-                { type: "email", message: "Please enter a valid email address" }
+                { type: "email", message: "Please enter a valid email address" },
               ]}
             >
-              <Input 
-                prefix={<UserOutlined className="site-form-item-icon" />} 
-                placeholder="Email" 
+              <Input
+                prefix={<UserOutlined className="site-form-item-icon" />}
+                placeholder="Email"
                 autoComplete="email"
                 className="rounded-lg"
               />
             </Form.Item>
-            
+
             <Form.Item
               name="password"
               label="Password"
@@ -137,22 +126,19 @@ const Login: React.FC = () => {
                 iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
               />
             </Form.Item>
-            
+
             <Form.Item>
               <div className="flex items-center justify-between">
-                <Checkbox 
-                  checked={rememberMe} 
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                >
+                <Checkbox checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)}>
                   Remember me
                 </Checkbox>
-                
+
                 <Link to="/forgot-password" className="text-red-600 hover:underline">
                   Forgot password?
                 </Link>
               </div>
             </Form.Item>
-            
+
             <Form.Item>
               <Button
                 type="primary"
@@ -165,7 +151,7 @@ const Login: React.FC = () => {
               </Button>
             </Form.Item>
           </Form>
-          
+
           <div className="text-sm text-center text-gray-500">
             Don't have an account?{" "}
             <Link to="/register" className="text-red-600 hover:underline">

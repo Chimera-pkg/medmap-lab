@@ -17,7 +17,7 @@ export const CustomLayout: React.FC<RefineThemedLayoutV2Props> = ({
 }) => {
   const breakpoint = Grid.useBreakpoint();
   const SiderToRender = Sider ?? DefaultSider;
-  const HeaderToRender =  DefaultHeader;
+  const HeaderToRender = DefaultHeader;
   const isSmall = typeof breakpoint.sm === "undefined" ? true : breakpoint.sm;
   const hasSider = !!SiderToRender({ Title });
 

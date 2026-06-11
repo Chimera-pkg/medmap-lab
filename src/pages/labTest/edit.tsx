@@ -30,20 +30,16 @@ export const PostEdit: React.FC = () => {
               <Input placeholder="Example: TC-001" />
             </Form.Item>
             <Form.Item
-                                        label="Date of Birth"
-                                        name="date_of_birth"
-                                        rules={[{ required: true, message: "Specimen Date is required" }]}
-                                        getValueProps={(value) => ({
-                                            value: value ? dayjs(value) : undefined,
-                                        })}
-                                        normalize={(value) => (value ? dayjs(value).format("YYYY-MM-DD") : null)}
-                                    >
-                                        <DatePicker
-                                            style={{ width: "100%" }}
-                                            format="YYYY-MM-DD"
-                                            placeholder="Choose date"
-                                        />
-                                    </Form.Item>
+              label="Date of Birth"
+              name="date_of_birth"
+              rules={[{ required: true, message: "Specimen Date is required" }]}
+              getValueProps={(value) => ({
+                value: value ? dayjs(value) : undefined,
+              })}
+              normalize={(value) => (value ? dayjs(value).format("YYYY-MM-DD") : null)}
+            >
+              <DatePicker style={{ width: "100%" }} format="YYYY-MM-DD" placeholder="Choose date" />
+            </Form.Item>
             <Form.Item
               label="Sex"
               name="sex"
@@ -92,9 +88,7 @@ export const PostEdit: React.FC = () => {
             <Form.Item
               label="Specimen Collected From"
               name="specimen_collected_from"
-              rules={[
-                { required: true, message: "Specimen Collected From is required" },
-              ]}
+              rules={[{ required: true, message: "Specimen Collected From is required" }]}
             >
               <Input placeholder="Example: Name of hospital" />
             </Form.Item>
@@ -113,24 +107,17 @@ export const PostEdit: React.FC = () => {
               <Input placeholder="E.G 001 002" />
             </Form.Item>
             <Form.Item
-                                        label="Specimen Date"
-                                        name="specimen_received"
-                                        rules={[{ required: true, message: "Specimen Date is required" }]}
-                                        getValueProps={(value) => ({
-                                            value: value ? dayjs(value) : undefined,
-                                        })}
-                                        normalize={(value) => (value ? dayjs(value).format("YYYY-MM-DD") : null)}
-                                    >
-                                        <DatePicker
-                                            style={{ width: "100%" }}
-                                            format="YYYY-MM-DD"
-                                            placeholder="Choose date"
-                                        />
-                                    </Form.Item>
-            <Form.Item
-              label="Reviewed By"
-              name="reviewer_name"
+              label="Specimen Date"
+              name="specimen_received"
+              rules={[{ required: true, message: "Specimen Date is required" }]}
+              getValueProps={(value) => ({
+                value: value ? dayjs(value) : undefined,
+              })}
+              normalize={(value) => (value ? dayjs(value).format("YYYY-MM-DD") : null)}
             >
+              <DatePicker style={{ width: "100%" }} format="YYYY-MM-DD" placeholder="Choose date" />
+            </Form.Item>
+            <Form.Item label="Reviewed By" name="reviewer_name">
               <Input placeholder="Example: Dr. Ong Kiat Hoe" />
             </Form.Item>
           </Col>

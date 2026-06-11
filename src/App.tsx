@@ -1,31 +1,41 @@
-import {
-  GitHubBanner,
-  Refine,
-  type AuthProvider,
-  Authenticated,
-  OnErrorResponse,
-} from "@refinedev/core";
-import {
-  useNotificationProvider,
-  ThemedLayoutV2,
-  ErrorComponent,
-  RefineThemes,
-} from "@refinedev/antd";
-import {
-  TableOutlined,
-  FileAddOutlined,
-  FileTextOutlined,
-} from "@ant-design/icons";
+import { Refine, type AuthProvider, Authenticated, OnErrorResponse } from "@refinedev/core";
+import { useNotificationProvider, ErrorComponent, RefineThemes } from "@refinedev/antd";
+import { FileAddOutlined, FileTextOutlined } from "@ant-design/icons";
 
 import dataProvider from "@refinedev/simple-rest";
+import axios from "axios";
 import routerProvider, {
-  NavigateToResource,
   CatchAllNavigate,
   UnsavedChangesNotifier,
   DocumentTitleHandler,
 } from "@refinedev/react-router";
 import { BrowserRouter, Routes, Route, Outlet } from "react-router";
 import { App as AntdApp, ConfigProvider } from "antd";
+
+// Authenticated HTTP client for the data provider: attaches the bearer token to
+// every request and logs the user out if the API rejects it.
+const axiosInstance = axios.create();
+
+axiosInstance.interceptors.request.use((config) => {
+  const token = localStorage.getItem("authToken");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      localStorage.removeItem("authToken");
+      if (window.location.pathname !== "/login") {
+        window.location.assign("/login");
+      }
+    }
+    return Promise.reject(error);
+  },
+);
 
 import "@refinedev/antd/dist/reset.css";
 
@@ -39,8 +49,7 @@ import { API_URL } from "./config";
 import { CustomLayout } from "./components/layout/Layout";
 import { WebApiList } from "./pages/webApi";
 import { WebApiDocumentation } from "./pages/webApi/documentation";
-import VerifyPage from './pages/viewers/verify';
-
+import VerifyPage from "./pages/viewers/verify";
 
 const App: React.FC = () => {
   const authProvider: AuthProvider = {
@@ -114,7 +123,7 @@ const App: React.FC = () => {
     getPermissions: async () => null,
     onError: function (error: any): Promise<OnErrorResponse> {
       throw new Error("Function not implemented.");
-    }
+    },
   };
 
   return (
@@ -123,10 +132,9 @@ const App: React.FC = () => {
         <AntdApp>
           <Refine
             authProvider={authProvider}
-            dataProvider={dataProvider(API_URL)}
+            dataProvider={dataProvider(API_URL, axiosInstance)}
             routerProvider={routerProvider}
             resources={[
-           
               {
                 name: "lab-tests",
                 list: "/lab-tests",
@@ -178,14 +186,12 @@ const App: React.FC = () => {
                 </Route>
                 {/* WEB API PATH */}
                 <Route path="/web-api" element={<WebApiList />} />
-                  <Route index element={<PostList />} />
-
+                <Route index element={<PostList />} />
               </Route>
 
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/web-api/documentation" element={<WebApiDocumentation />} />
-              
 
               <Route
                 element={

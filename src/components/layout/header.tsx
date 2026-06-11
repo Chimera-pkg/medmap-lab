@@ -1,20 +1,13 @@
 import React from "react";
 import { Layout as AntdLayout, Typography, Avatar, Space, theme } from "antd";
-import {
-  pickNotDeprecated,
-  useActiveAuthProvider,
-  useGetIdentity,
-} from "@refinedev/core";
+import { pickNotDeprecated, useActiveAuthProvider, useGetIdentity } from "@refinedev/core";
 
 export type RefineThemedHeadProps = {
   isSticky?: boolean;
   sticky?: boolean;
 };
 
-export const Header: React.FC<RefineThemedHeadProps> = ({
-  isSticky,
-  sticky,
-}) => {
+export const Header: React.FC<RefineThemedHeadProps> = ({ isSticky, sticky }) => {
   const { token } = theme.useToken();
 
   const authProvider = useActiveAuthProvider();
@@ -45,8 +38,7 @@ export const Header: React.FC<RefineThemedHeadProps> = ({
 
   return (
     <AntdLayout.Header style={headerStyles}>
-      <Space>
-      </Space>
+      <Space></Space>
       <Space>
         <Space size="middle">
           {user?.name && <Typography.Text strong>{user.name}</Typography.Text>}

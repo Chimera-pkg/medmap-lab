@@ -10,7 +10,7 @@ const Hl7Viewer: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<any>(null);
-  
+
   const fileUrl = searchParams.get("url");
   const token = searchParams.get("token");
 
@@ -24,36 +24,34 @@ const Hl7Viewer: React.FC = () => {
     // Fetch the HL7 data with authentication
     fetch(fileUrl, {
       headers: {
-        Authorization: `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error("Failed to load HL7 data");
-      }
-      return response.json();
-    })
-    .then(jsonData => {
-      setData(jsonData);
-      setLoading(false);
-    })
-    .catch(err => {
-      setError(err.message);
-      setLoading(false);
-    });
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to load HL7 data");
+        }
+        return response.json();
+      })
+      .then((jsonData) => {
+        setData(jsonData);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message);
+        setLoading(false);
+      });
   }, [fileUrl, token]);
 
   const renderJsonData = (jsonData: any, indent = 0) => {
     return Object.entries(jsonData).map(([key, value]) => {
-      const style = { marginLeft: `${indent * 20}px`, marginBottom: '8px' };
-      
-      if (value !== null && typeof value === 'object') {
+      const style = { marginLeft: `${indent * 20}px`, marginBottom: "8px" };
+
+      if (value !== null && typeof value === "object") {
         return (
           <div key={key} style={style}>
             <Text strong>{key}:</Text>
-            <div style={{ marginTop: '4px' }}>
-              {renderJsonData(value, indent + 1)}
-            </div>
+            <div style={{ marginTop: "4px" }}>{renderJsonData(value, indent + 1)}</div>
           </div>
         );
       } else {
@@ -68,14 +66,14 @@ const Hl7Viewer: React.FC = () => {
 
   return (
     <div style={{ padding: "20px", maxWidth: "1000px", margin: "0 auto" }}>
-      <Button 
-        icon={<ArrowLeftOutlined />} 
+      <Button
+        icon={<ArrowLeftOutlined />}
         onClick={() => window.close()}
         style={{ marginBottom: "16px" }}
       >
         Close Viewer
       </Button>
-      
+
       <Card title="HL7 Viewer" bordered={false}>
         {loading ? (
           <div style={{ textAlign: "center", padding: "40px" }}>

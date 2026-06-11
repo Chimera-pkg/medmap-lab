@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { UserOutlined, LockOutlined, MailOutlined, EyeTwoTone, EyeInvisibleOutlined } from "@ant-design/icons";
+import {
+  UserOutlined,
+  LockOutlined,
+  MailOutlined,
+  EyeTwoTone,
+  EyeInvisibleOutlined,
+} from "@ant-design/icons";
 import { API_URL } from "../config";
 import { Alert, Button, Form, Input, notification, Modal, Spin, Result } from "antd";
 import { Link, useNavigate } from "react-router-dom";
@@ -12,11 +18,11 @@ const Register: React.FC = () => {
   const [countdown, setCountdown] = useState(5);
   const navigate = useNavigate();
 
-  const handleRegister = async (values: { 
-    username: string; 
-    email: string; 
-    password: string; 
-    confirmPassword: string; 
+  const handleRegister = async (values: {
+    username: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
   }) => {
     // Check if passwords match
     if (values.password !== values.confirmPassword) {
@@ -26,47 +32,46 @@ const Register: React.FC = () => {
 
     setLoading(true);
     setError("");
-    
+
     try {
       console.log("Attempting registration with:", values.email);
       const response = await fetch(`${API_URL}/auth/register/admin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           username: values.username,
-          email: values.email, 
-          password: values.password 
+          email: values.email,
+          password: values.password,
         }),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Registration failed");
       }
-      
+
       const userData = await response.json();
-      
+
       // Store registration info temporarily
       localStorage.setItem("justRegistered", "true");
       localStorage.setItem("registeredEmail", values.email);
-      
+
       // Show success UI
       setRegisterSuccess(true);
-      
+
       // Start countdown for redirect
       let secondsLeft = 5;
       setCountdown(secondsLeft);
-      
+
       const timer = setInterval(() => {
         secondsLeft -= 1;
         setCountdown(secondsLeft);
-        
+
         if (secondsLeft <= 0) {
           clearInterval(timer);
           navigate("/login");
         }
       }, 1000);
-      
     } catch (err: any) {
       console.error("Registration error:", err);
       setError(err.message || "Registration failed. Please try again.");
@@ -89,14 +94,14 @@ const Register: React.FC = () => {
             </div>
           }
           extra={[
-            <Button 
-              type="primary" 
+            <Button
+              type="primary"
               key="login"
               onClick={() => navigate("/login")}
               style={{ background: "#A51424", borderColor: "#A51424" }}
             >
               Log in now
-            </Button>
+            </Button>,
           ]}
         />
       </div>
@@ -107,23 +112,17 @@ const Register: React.FC = () => {
     <div className="min-h-screen flex">
       {/* Left: Image */}
       <div className="lg:block w-1/2">
-        <img
-          src="/hospital_image.png"
-          alt="Hospital"
-          className="w-full h-full object-cover"
-        />
+        <img src="/hospital_image.png" alt="Hospital" className="w-full h-full object-cover" />
       </div>
-      
+
       {/* Right: Registration Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md space-y-6" style={{ maxWidth: "500px" }}>
           <div>
             <h2 className="text-2xl font-bold text-gray-800">Create Account</h2>
-            <p className="text-sm text-gray-500 mt-2">
-              Sign up to access the healthcare portal.
-            </p>
+            <p className="text-sm text-gray-500 mt-2">Sign up to access the healthcare portal.</p>
           </div>
-          
+
           {error && (
             <Alert
               message="Registration Error"
@@ -134,7 +133,7 @@ const Register: React.FC = () => {
               onClose={() => setError("")}
             />
           )}
-          
+
           <Form
             form={form}
             name="register"
@@ -149,36 +148,36 @@ const Register: React.FC = () => {
               label="Full Name"
               rules={[{ required: true, message: "Please input your full name!" }]}
             >
-              <Input 
-                prefix={<UserOutlined className="site-form-item-icon" />} 
-                placeholder="John Doe" 
+              <Input
+                prefix={<UserOutlined className="site-form-item-icon" />}
+                placeholder="John Doe"
                 className="rounded-lg"
               />
             </Form.Item>
-            
+
             {/* Email */}
             <Form.Item
               name="email"
               label="Email Address"
               rules={[
                 { required: true, message: "Please input your email!" },
-                { type: "email", message: "Please enter a valid email address" }
+                { type: "email", message: "Please enter a valid email address" },
               ]}
             >
-              <Input 
-                prefix={<MailOutlined className="site-form-item-icon" />} 
-                placeholder="you@example.com" 
+              <Input
+                prefix={<MailOutlined className="site-form-item-icon" />}
+                placeholder="you@example.com"
                 className="rounded-lg"
               />
             </Form.Item>
-            
+
             {/* Password */}
             <Form.Item
               name="password"
               label="Password"
               rules={[
                 { required: true, message: "Please input your password!" },
-                { min: 6, message: "Password must be at least 6 characters" }
+                { min: 6, message: "Password must be at least 6 characters" },
               ]}
               hasFeedback
             >
@@ -189,17 +188,17 @@ const Register: React.FC = () => {
                 iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
               />
             </Form.Item>
-            
+
             {/* Confirm Password */}
             <Form.Item
               name="confirmPassword"
               label="Confirm Password"
-              dependencies={['password']}
+              dependencies={["password"]}
               rules={[
                 { required: true, message: "Please confirm your password!" },
                 ({ getFieldValue }) => ({
                   validator(_, value) {
-                    if (!value || getFieldValue('password') === value) {
+                    if (!value || getFieldValue("password") === value) {
                       return Promise.resolve();
                     }
                     return Promise.reject(new Error("The two passwords do not match!"));
@@ -215,7 +214,7 @@ const Register: React.FC = () => {
                 iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
               />
             </Form.Item>
-            
+
             {/* Submit Button */}
             <Form.Item>
               <Button
@@ -229,7 +228,7 @@ const Register: React.FC = () => {
               </Button>
             </Form.Item>
           </Form>
-          
+
           <div className="text-sm text-center text-gray-500">
             Already have an account?{" "}
             <Link to="/login" className="text-red-600 hover:underline">

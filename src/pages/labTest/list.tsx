@@ -2,11 +2,18 @@ import { List, useTable, EditButton, ShowButton } from "@refinedev/antd";
 import { Table, Space, Button, Modal, message, Input } from "antd";
 import moment from "moment";
 import { API_URL } from "../../config";
-import { DeleteOutlined, FilePdfOutlined, FileTextOutlined, EyeOutlined, SearchOutlined } from "@ant-design/icons";
+import {
+  DeleteOutlined,
+  FilePdfOutlined,
+  FileTextOutlined,
+  EyeOutlined,
+  SearchOutlined,
+} from "@ant-design/icons";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useList } from "@refinedev/core";
 import debounce from "lodash/debounce";
+import { downloadLabTestFile, LabTestFileType } from "../../utils/download";
 
 interface ILabTest {
   id: number;
@@ -49,7 +56,7 @@ interface ILabTest {
 export const PostList = () => {
   const [searchValue, setSearchValue] = useState<string>("");
   const [filteredData, setFilteredData] = useState<ILabTest[]>([]);
-  
+
   const navigate = useNavigate();
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([]);
 
@@ -62,18 +69,20 @@ export const PostList = () => {
   const { refetch: refetchSearchResults } = useList<ILabTest>({
     resource: "lab-tests",
     config: {
-      filters: searchValue.trim() ? [
-        {
-          field: "test_request_reference_number",
-          operator: "contains",
-          value: searchValue.trim(),
-        },
-        {
-          field: "patient_name",
-          operator: "contains", 
-          value: searchValue.trim(),
-        }
-      ] : [],
+      filters: searchValue.trim()
+        ? [
+            {
+              field: "test_request_reference_number",
+              operator: "contains",
+              value: searchValue.trim(),
+            },
+            {
+              field: "patient_name",
+              operator: "contains",
+              value: searchValue.trim(),
+            },
+          ]
+        : [],
     },
     queryOptions: {
       enabled: false, // Only fetch when we trigger refetch
@@ -142,7 +151,7 @@ export const PostList = () => {
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${token}`
+              Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({
               deleted_at: new Date().toISOString(),
@@ -183,8 +192,8 @@ export const PostList = () => {
                 body: JSON.stringify({
                   deleted_at: new Date().toISOString(),
                 }),
-              })
-            )
+              }),
+            ),
           );
 
           message.success("Selected records deleted successfully");
@@ -198,34 +207,13 @@ export const PostList = () => {
     });
   };
 
-  const handleFileDownload = (fileUrl: string, fileName: string) => {
-    const token = localStorage.getItem("authToken");
-    
-    fetch(`${fileUrl}`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error("Failed to download file");
-      }
-      return response.blob();
-    })
-    .then(blob => {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      a.remove();
-    })
-    .catch(error => {
+  const handleFileDownload = async (recordId: number, type: LabTestFileType, fileName: string) => {
+    try {
+      await downloadLabTestFile(recordId, type, fileName);
+    } catch (error) {
       console.error("Error downloading file:", error);
       message.error("Failed to download file");
-    });
+    }
   };
 
   const rowSelection = {
@@ -243,8 +231,7 @@ export const PostList = () => {
 
   return (
     <List>
-      <Space style={{ marginBottom: 16, width: '100%' }} direction="vertical">
-        
+      <Space style={{ marginBottom: 16, width: "100%" }} direction="vertical">
         {/* Action Buttons */}
         <Space>
           <Input.Search
@@ -269,22 +256,21 @@ export const PostList = () => {
           </Button>
           <Button
             type="primary"
-            onClick={() => navigate('/lab-tests/batch-upload')}
+            onClick={() => navigate("/lab-tests/batch-upload")}
             style={{ marginLeft: 8 }}
           >
             Batch Upload
           </Button>
         </Space>
       </Space>
-      
-      <Table
-        {...modifiedTableProps}
-        rowKey="id"
-        rowSelection={rowSelection}
-      >
+
+      <Table {...modifiedTableProps} rowKey="id" rowSelection={rowSelection}>
         <Table.Column dataIndex="patient_name" title="PATIENT NAME" />
         <Table.Column dataIndex="requester" title="REQUESTER" />
-        <Table.Column dataIndex="test_request_reference_number" title="TEST REQUEST REFERENCE NUMBER" />
+        <Table.Column
+          dataIndex="test_request_reference_number"
+          title="TEST REQUEST REFERENCE NUMBER"
+        />
         <Table.Column dataIndex="specimen_type" title="SPECIMEN TYPE" />
         <Table.Column
           title="REPORT DOWNLOAD"
@@ -295,19 +281,16 @@ export const PostList = () => {
                   <Button
                     type="link"
                     icon={<FilePdfOutlined />}
-                    onClick={() => handleFileDownload(record.report_download_pdf, `${record.test_case_id}_report.pdf`)}
+                    onClick={() =>
+                      handleFileDownload(record.id, "pdf", `${record.test_case_id}_report.pdf`)
+                    }
                   >
                     PDF
                   </Button>
                   <Button
                     type="link"
                     icon={<EyeOutlined />}
-                    onClick={() => {
-                      const token = localStorage.getItem("authToken");
-                      const fileUrl = `${record.report_download_pdf}`;
-                      const viewerUrl = `/pdf-viewer?url=${encodeURIComponent(fileUrl)}&token=${token}`;
-                      window.open(viewerUrl, '_blank');
-                    }}
+                    onClick={() => window.open(`/pdf-viewer?id=${record.id}`, "_blank")}
                   >
                     View
                   </Button>
@@ -320,7 +303,9 @@ export const PostList = () => {
                   <Button
                     type="link"
                     icon={<FileTextOutlined />}
-                    onClick={() => handleFileDownload(record.report_download_hl7, `${record.test_case_id}_report.hl7`)}
+                    onClick={() =>
+                      handleFileDownload(record.id, "hl7", `${record.test_case_id}_report.hl7`)
+                    }
                   >
                     HL7
                   </Button>

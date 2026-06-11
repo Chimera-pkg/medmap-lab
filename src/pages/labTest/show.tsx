@@ -1,14 +1,24 @@
 import { Show } from "@refinedev/antd";
 import { useShow } from "@refinedev/core";
-import { Typography, Button, Space, Row, Col, Card, Tag, Divider } from "antd";
+import { Typography, Button, Space, Row, Col, Card, Tag, Divider, message } from "antd";
 import moment from "moment";
 import { FilePdfOutlined, FileTextOutlined, EyeOutlined } from "@ant-design/icons";
+import { downloadLabTestFile, LabTestFileType } from "../../utils/download";
 
 const { Title, Text } = Typography;
 
 export const PostShow = () => {
   const { queryResult } = useShow<any>();
   const record = queryResult?.data?.data;
+
+  const handleDownload = async (recordId: number, type: LabTestFileType, fileName: string) => {
+    try {
+      await downloadLabTestFile(recordId, type, fileName);
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      message.error("Failed to download file");
+    }
+  };
 
   return (
     <Show>
@@ -26,9 +36,7 @@ export const PostShow = () => {
 
             <Title level={5}>Date of Birth</Title>
             <Text>
-              {record?.date_of_birth
-                ? moment(record.date_of_birth).format("DD-MMM-YYYY")
-                : "-"}
+              {record?.date_of_birth ? moment(record.date_of_birth).format("DD-MMM-YYYY") : "-"}
             </Text>
             <Divider />
 
@@ -237,8 +245,9 @@ export const PostShow = () => {
                       <Button
                         type="link"
                         icon={<FilePdfOutlined />}
-                        href={record.report_download_pdf}
-                        target="_blank"
+                        onClick={() =>
+                          handleDownload(record.id, "pdf", `${record.test_case_id}_report.pdf`)
+                        }
                         size="small"
                       >
                         Download PDF
@@ -246,12 +255,7 @@ export const PostShow = () => {
                       <Button
                         type="link"
                         icon={<EyeOutlined />}
-                        onClick={() => {
-                          const token = localStorage.getItem("authToken");
-                          const fileUrl = `${record.report_download_pdf}`;
-                          const viewerUrl = `/pdf-viewer?url=${encodeURIComponent(fileUrl)}&token=${token}`;
-                          window.open(viewerUrl, '_blank');
-                        }}
+                        onClick={() => window.open(`/pdf-viewer?id=${record.id}`, "_blank")}
                         size="small"
                       >
                         View PDF
@@ -262,8 +266,9 @@ export const PostShow = () => {
                     <Button
                       type="link"
                       icon={<FileTextOutlined />}
-                      href={record.report_download_hl7}
-                      target="_blank"
+                      onClick={() =>
+                        handleDownload(record.id, "hl7", `${record.test_case_id}_report.hl7`)
+                      }
                       size="small"
                     >
                       Download HL7
